@@ -2163,6 +2163,18 @@ html[data-daymode="true"]       .day-preview   { border-color: #c47820; box-shad
 .tower-btn-portal { background: linear-gradient(135deg, #c2410c, #f97316); color: #fff; }
 
 /* ══════════════════════════════════════════════════════
+   ABYSS HUNTER (FISH) GAME CARD
+══════════════════════════════════════════════════════ */
+.game-card.fish .card-glow { background: radial-gradient(circle at 50% 0%, rgba(40,224,200,0.18), transparent 70%); }
+.game-card.fish:hover { border-color: #28e0c8; box-shadow: 0 12px 40px rgba(40,224,200,0.25); }
+.fish .game-title { color: #28e0c8; }
+.fish .stat-value { color: #28e0c8; }
+.fish .play-btn   { background: linear-gradient(135deg, #0b6f66, #28e0c8); color: #03161a; }
+.fish.game-card::after  { background: linear-gradient(90deg, transparent, #28e0c8, transparent); }
+.fish .game-tag { background: rgba(40,224,200,0.12); border: 1px solid rgba(40,224,200,0.3); color: #28e0c8; }
+.fish:hover .game-emoji { filter: drop-shadow(0 0 16px #28e0c8); }
+
+/* ══════════════════════════════════════════════════════
    SEASONAL BANNER
 ══════════════════════════════════════════════════════ */
 #seasonal-banner {

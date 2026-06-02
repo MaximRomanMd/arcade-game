@@ -780,6 +780,12 @@ function renderHome(stats) {
     renderStreakWidget();
     renderEventSection(stats);
     renderWeeklyEventBanner();
+
+    // Abyss Hunter (fish) — standalone stats, read directly & safely
+    const fb = document.getElementById('fish-best');
+    const fg = document.getElementById('fish-games');
+    if (fb) fb.textContent = formatNum(parseInt(localStorage.getItem(`fishhunter_best_${state.nickname}`)  || '0'));
+    if (fg) fg.textContent = parseInt(localStorage.getItem(`fishhunter_games_${state.nickname}`) || '0');
 }
 
 // ════════════════════════════════════════════════════════
@@ -1125,6 +1131,7 @@ function openGame(game) {
         blob:   '../blob-game/index.html',
         bingo:  '../bingo-game/index.html',
         tower:  '../tower-rush/index.html',
+        fish:   '../fish-hunter/index.html',
     };
     if (urls[game]) window.location.href = urls[game];
 }
