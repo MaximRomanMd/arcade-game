@@ -1024,13 +1024,8 @@ function drawFish(f){
   const spr = (FISH_TYPES[_sk] && FISH_TYPES[_sk].sprite) || (f.jackpot && FISH_TYPES.golden ? FISH_TYPES.golden.sprite : null);
   if (spr && spr.complete){
     const _ox=-s*1.9, _oy=-s*1.2, _dw=s*3.8, _dh=s*2.4;
-    ctx.shadowBlur = 0;                          // no glow halo
-    const _bob = Math.sin(f.wig*0.9) * s * 0.04; // gentle bob
-    const _sw  = Math.sin(f.wig) * 0.085;        // tail swing (rigid pivot near head, no distortion)
-    ctx.save();
-    ctx.translate(s*1.15, 0); ctx.rotate(_sw); ctx.translate(-s*1.15, 0);
-    ctx.drawImage(spr, _ox, _oy + _bob, _dw, _dh);
-    ctx.restore();
+    ctx.shadowBlur = 0;                 // no glow
+    ctx.drawImage(spr, _ox, _oy, _dw, _dh);   // static, complete sprite as-is
     // damage flash — fish turns red when hit
     if (f.hitFlash > 0){
       ctx.globalAlpha = Math.min(0.85, f.hitFlash*7);
