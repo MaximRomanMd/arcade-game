@@ -1024,14 +1024,15 @@ function drawFish(f){
   const spr = (FISH_TYPES[_sk] && FISH_TYPES[_sk].sprite) || (f.jackpot && FISH_TYPES.golden ? FISH_TYPES.golden.sprite : null);
   if (spr && spr.complete){
     const _ox=-s*1.9, _oy=-s*1.2, _dw=s*3.8, _dh=s*2.4;
-    const _N=(f.size>28?12:f.size>18?9:6), _sw=spr.naturalWidth||spr.width, _sh=spr.naturalHeight||spr.height;
+    const _N=(f.size>52?16:f.size>28?12:f.size>18?9:6), _sw=spr.naturalWidth||spr.width, _sh=spr.naturalHeight||spr.height;
     const _ss=_sw/_N, _sd=_dw/_N, _sp=f.wig;
+    const _bigSwim = f.boss || f.size > 52;
     const _glow = f.shiny||f.boss||f.jackpot;
     if (_glow){ ctx.shadowColor = f.glow; ctx.shadowBlur = 16; }
     for (let _i=0;_i<_N;_i++){
       const _t=1-_i/(_N-1);                 // 1 at tail .. 0 at head
-      const _amp=_t*_t*s*0.42;              // gentle near body, strong only at the very tail
-      const _yo=Math.sin(_sp*1.5 + _t*1.6)*_amp;
+      const _amp=_bigSwim ? (0.2+0.8*_t)*s*0.34 : _t*_t*s*0.42;              // gentle near body, strong only at the very tail
+      const _yo=Math.sin((_bigSwim?_sp*0.8:_sp*1.5) + _t*(_bigSwim?2.6:1.6))*_amp;
       ctx.drawImage(spr, _i*_ss,0,_ss,_sh, _ox+_i*_sd-0.8, _oy+_yo, _sd+2, _dh);
     }
     if (_glow) ctx.shadowBlur = 0;
