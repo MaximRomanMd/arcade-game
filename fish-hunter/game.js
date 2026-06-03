@@ -88,6 +88,7 @@ let aim = { x: W/2, y: H*0.4 };
 let firing = false, fireTimer = 0;
 let wpnLevel = 1;
 let credits = START_CREDITS;
+let creditsShown = START_CREDITS;
 let score = 0, timeLeft = ROUND_TIME, shake = 0, flash = 0, flashColor = '#28e0c8';
 let combo = 1, comboTimer = 0, comboKills = 0;
 let spawnTimer = 0, elapsed = 0;
@@ -453,6 +454,9 @@ function spawnCoinFx(x,y,n){
 }
 function updateFx(dt){
   updateBgLife(dt);
+  creditsShown += (credits - creditsShown) * Math.min(1, dt*3.5);
+  if (Math.abs(credits - creditsShown) < 1) creditsShown = credits;
+  { const _e=document.getElementById('hud-credits'); if(_e) _e.textContent = Math.max(0,Math.round(creditsShown)); }
   for (const c of coinsFx){
     if (c.delay>0){ c.delay-=dt; continue; }
     c.t += dt; c.spin += c.spinV*dt;
@@ -530,7 +534,7 @@ function labelFor(k){
 // ── HUD ──────────────────────────────────────────────────────────
 function updateHUD(){
   document.getElementById('hud-score').textContent   = score;
-  document.getElementById('hud-credits').textContent = Math.max(0,Math.floor(credits));
+  document.getElementById('hud-credits').textContent = Math.max(0,Math.round(creditsShown));
   document.getElementById('hud-time').textContent    =
     mode==='tournament' ? Math.ceil(timeLeft) : '∞';
 }
@@ -1266,7 +1270,7 @@ requestAnimationFrame(loop);
 // ── start / end ──────────────────────────────────────────────────
 function startGame(){
   fish=[]; bullets=[]; particles=[]; pops=[]; rings=[];
-  score=0; credits=START_CREDITS; timeLeft=ROUND_TIME;
+  score=0; credits=START_CREDITS; creditsShown=START_CREDITS; timeLeft=ROUND_TIME;
   combo=1; comboKills=0; comboTimer=0; spawnTimer=0; elapsed=0;
   shake=0; flash=0; wpnLevel=1; firing=false;
   stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
@@ -1369,3 +1373,20 @@ function showSoon(w){ if(_sm){ _sm.textContent = w + ' - coming soon'; _sm.class
 document.getElementById('btn-again').onclick = () => { startGame(); };
 document.getElementById('exit-btn').onclick = exitToMenu;
 document.getElementById('mute-btn').onclick = toggleMute;
+function makeCoinIcon(){
+  const c=document.createElement('canvas'); c.width=c.height=44; const x=c.getContext('2d');
+  x.translate(22,22); const r=19;
+  const g=x.createRadialGradient(-r*0.3,-r*0.3,r*0.15,0,0,r);
+  g.addColorStop(0,'#fff0bf'); g.addColorStop(0.5,'#ffce63'); g.addColorStop(1,'#dd9418');
+  x.fillStyle=g; x.beginPath(); x.arc(0,0,r,0,6.28); x.fill();
+  x.strokeStyle='#b8801a'; x.lineWidth=r*0.13; x.beginPath(); x.arc(0,0,r*0.9,0,6.28); x.stroke();
+  x.fillStyle='#9a6b12';
+  x.beginPath(); x.ellipse(r*0.06,0,r*0.4,r*0.22,0,0,6.28); x.fill();
+  x.beginPath(); x.moveTo(-r*0.32,0); x.lineTo(-r*0.6,-r*0.2); x.lineTo(-r*0.6,r*0.2); x.closePath(); x.fill();
+  x.beginPath(); x.moveTo(r*0.08,-r*0.16); x.quadraticCurveTo(r*0.28,-r*0.42,r*0.36,-r*0.14); x.closePath(); x.fill();
+  x.fillStyle='#5a3d08'; x.beginPath(); x.arc(r*0.32,-r*0.05,r*0.05,0,6.28); x.fill();
+  const url=c.toDataURL();
+  document.querySelectorAll('.coin-ico').forEach(e=>{ e.style.background='url('+url+') center/contain no-repeat'; });
+}
+try { makeCoinIcon(); } catch(e){}
+coinImg.addEventListener('load', ()=>{ document.querySelectorAll('.coin-ico').forEach(e=>{ e.style.background='url('+coinImg.src+') center/contain no-repeat'; }); });
