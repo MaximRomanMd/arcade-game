@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#04111f">
+<title>ABYSS HUNTER</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══════════ GAME SHELL ══════════ -->
+<div id="shell">
+
+  <!-- top HUD -->
+  <header id="hud">
+    <a id="back-btn" href="../game-portal/index.html" title="Back to Portal">‹ PORTAL</a>
+    <button id="mute-btn" title="Sound on/off">🔊</button>
+
+    <div class="hud-block">
+      <span class="hud-label">SCORE</span>
+      <span class="hud-value" id="hud-score">0</span>
+    </div>
+
+    <div class="hud-block">
+      <span class="hud-label">CREDITS</span>
+      <span class="credits-val"><span class="coin-ico"></span><span class="hud-value gold" id="hud-credits">0</span></span>
+    </div>
+
+    <div class="hud-block">
+      <span class="hud-label">TIME</span>
+      <span class="hud-value" id="hud-time">90</span>
+    </div>
+
+    <div class="hud-block combo-block" id="combo-block">
+      <span class="hud-label">COMBO</span>
+      <span class="hud-value combo" id="hud-combo">x1</span>
+    </div>
+
+    <button id="exit-btn" title="Exit to menu">⤬ EXIT</button>
+  </header>
+
+  <!-- the game canvas -->
+  <canvas id="game"></canvas>
+
+  <!-- bottom weapon bar -->
+  <footer id="weapon-bar">
+    <button class="wpn-btn" id="wpn-down" aria-label="Lower weapon power">−</button>
+    <div class="wpn-info">
+      <span class="wpn-label">CANNON</span>
+      <span class="wpn-level" id="wpn-level">LV 1</span>
+      <span class="wpn-cost" id="wpn-cost">cost 1 / shot</span>
+    </div>
+    <button class="wpn-btn" id="wpn-up" aria-label="Raise weapon power">+</button>
+    <button id="wpn-mode" class="wpn-mode">SPREAD</button>
+  </footer>
+
+</div>
+
+<!-- ══════════ BOOT / SPLASH ══════════ -->
+<div id="overlay-boot" class="overlay boot">
+  <div class="boot-inner">
+    <!-- ludo.ai hook: drop assets/logo.png and it replaces the text logo automatically -->
+    <img id="boot-logo-img" alt="" />
+    <div id="boot-logo-text" class="boot-logo">ABYSS<span>HUNTER</span></div>
+    <div class="boot-sub">DEEP-SEA SKILL ARCADE</div>
+
+    <div class="loading-wrap">
+      <div class="loading-track"><div id="loading-fill" class="loading-fill"></div></div>
+      <div class="loading-row">
+        <span id="loading-msg">Charting the depths…</span>
+        <span id="loading-pct">0%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MENU OVERLAY ══════════ -->
+<div id="overlay-start" class="overlay lobby2 hidden">
+  <div class="lobby2-inner">
+    <img id="menu-logo-img" class="menu-logo-img2" alt="ABYSS HUNTER" />
+    <div class="ov-logo lobby2-logotext" id="menu-logo-text">ABYSS<span>HUNTER</span></div>
+
+    <div class="lobby2-cols">
+      <div class="lobby2-left">
+        <div class="daily-mini" id="menu-daily"></div>
+        <div id="daily-reward" class="daily-reward"></div>
+        <button id="btn-start" class="menu-cta cta-play">PLAY</button>
+        <button id="btn-multi" class="menu-cta secondary">MULTIPLAYER<span class="soon">SOON</span></button>
+        <button id="btn-demo" class="menu-cta secondary">DEMO</button>
+        <button id="btn-credits" class="menu-cta secondary">CREDITS</button>
+        <div id="soon-msg" class="soon-msg"></div>
+      </div>
+
+      <div class="lobby2-right">
+        <div class="panel-title">WEEKLY - BEST SCORES</div>
+        <div class="prize-line">WEEKLY PRIZE - TOP 3 WIN</div>
+        <div id="menu-lb" class="weekly-lb"></div>
+      </div>
+    </div>
+
+    <details class="how-to">
+      <summary>How to play</summary>
+      <div class="ov-rules">
+        <div class="rule"><span class="rk">AIM</span> Move your pointer - the cannon tracks it.</div>
+        <div class="rule"><span class="rk">FIRE</span> Click / tap and hold to shoot.</div>
+        <div class="rule"><span class="rk">POWER</span> Shoot the glowing orbs to activate power-ups.</div>
+        <div class="rule"><span class="rk">GOAL</span> Highest score before the clock runs out.</div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- GAME OVER OVERLAY -->
+<div id="overlay-end" class="overlay hidden">
+  <div class="ov-card">
+    <div class="ov-result">RUN COMPLETE</div>
+    <div class="end-score" id="end-score">0</div>
+    <div class="end-line">Best hunt this run: <strong id="end-biggest">—</strong></div>
+    <div class="end-line" id="end-pb"></div>
+    <div class="end-stats" id="end-stats"></div>
+    <div class="end-daily" id="end-daily"></div>
+    <div class="end-lb" id="end-lb"></div>
+    <button id="btn-again" class="big-btn">HUNT AGAIN</button>
+    <a class="text-link" href="../game-portal/index.html">← Back to Portal</a>
+  </div>
+</div>
+
+<!-- CREDITS / PROFILE -->
+<div id="overlay-credits" class="overlay hidden">
+  <div class="ov-card">
+    <div class="ov-result">YOUR PROFILE</div>
+    <div id="credits-stats" class="credits-stats"></div>
+    <button id="credits-close" class="big-btn">DONE</button>
+  </div>
+</div>
+
+<!-- CANNON SHOP -->
+<div id="overlay-shop" class="overlay hidden">
+  <div class="ov-card shop-card">
+    <div class="ov-result">CANNON SHOP</div>
+    <div class="shop-wallet">Wallet: <strong id="shop-wallet">0</strong> credits</div>
+    <div id="shop-grid" class="shop-grid"></div>
+    <button id="shop-close" class="big-btn">DONE</button>
+  </div>
+</div>
+
+<script>(function(){var s=document.createElement("script");s.src="game.js?t="+Date.now();document.body.appendChild(s);})();</script>
+</body>
+</html>
