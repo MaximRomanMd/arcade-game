@@ -50,16 +50,16 @@ const COMBO_WINDOW = 2.6;     // seconds to keep the combo alive
 const FISH_TYPES = {
   minnow : { hp:1,  value:5,   size:16, speed:170, color:'#39e6c4', glow:'#aef9ec', weight:38, coins:1 },
   fry    : { hp:1,  value:3,   size:11, speed:215, color:'#7fe0d0', glow:'#cffaf0', weight:24, coins:1, spriteFrom:'minnow' },
-  darter : { hp:2,  value:12,  size:22, speed:135, color:'#4aa8ff', glow:'#bfe2ff', weight:28, coins:2 },
-  ray    : { hp:4,  value:30,  size:34, speed:88,  color:'#b07bff', glow:'#e4d2ff', weight:18, coins:5 },
-  angler : { hp:6,  value:70,  size:30, speed:110, color:'#ff7a59', glow:'#ffd2b0', weight:9,  coins:11, hunter:true },
-  golden : { hp:9,  value:140, size:30, speed:160, color:'#ffce63', glow:'#fff1c2', weight:4,  coins:24, shiny:true },
-  levia  : { hp:22, value:320, size:64, speed:55,  color:'#ffb13d', glow:'#ffe7a8', weight:1,  coins:60, boss:true },
-  seacat : { hp:12, value:100, size:42, speed:95,  color:'#9aa6b0', glow:'#d7e0e8', weight:6,  coins:18 },
-  shark  : { hp:18, value:200, size:58, speed:135, color:'#7f93a3', glow:'#cfe0ee', weight:3,  coins:35 },
-  whale  : { hp:32, value:450, size:95, speed:50,  color:'#3a78d0', glow:'#a9d0ff', weight:1,  coins:80 },
-  megalodon:{ hp:70, value:900, size:140, speed:40, color:'#5a6b7a', glow:'#cfe0ee', weight:0, coins:200, boss:true },
-  jackpot: { hp:24, value:1000,size:74, speed:80,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:200, jackpot:true },
+  darter : { hp:3,  value:12,  size:22, speed:135, color:'#4aa8ff', glow:'#bfe2ff', weight:28, coins:3 },
+  ray    : { hp:5,  value:30,  size:34, speed:88,  color:'#b07bff', glow:'#e4d2ff', weight:18, coins:7 },
+  angler : { hp:10, value:70,  size:30, speed:110, color:'#ff7a59', glow:'#ffd2b0', weight:9,  coins:16, hunter:true },
+  golden : { hp:16, value:160, size:30, speed:160, color:'#ffce63', glow:'#fff1c2', weight:4,  coins:30, shiny:true },
+  levia  : { hp:60, value:380, size:64, speed:55,  color:'#ffb13d', glow:'#ffe7a8', weight:1,  coins:100, boss:true },
+  seacat : { hp:20, value:100, size:42, speed:95,  color:'#9aa6b0', glow:'#d7e0e8', weight:6,  coins:30 },
+  shark  : { hp:40, value:230, size:58, speed:135, color:'#7f93a3', glow:'#cfe0ee', weight:3,  coins:60 },
+  whale  : { hp:85, value:600, size:118, speed:46, color:'#3a78d0', glow:'#a9d0ff', weight:1,  coins:130 },
+  megalodon:{ hp:320, value:2000, size:140, speed:38, color:'#5a6b7a', glow:'#cfe0ee', weight:0, coins:450, boss:true },
+  jackpot: { hp:140, value:2000,size:74, speed:80,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:300, jackpot:true },
 };
 const TYPE_KEYS = Object.keys(FISH_TYPES);
 const TOTAL_WEIGHT = TYPE_KEYS.reduce((s,k)=>s+FISH_TYPES[k].weight,0);
@@ -104,6 +104,7 @@ let credits = START_CREDITS;
 let creditsShown = START_CREDITS;
 let score = 0, timeLeft = ROUND_TIME, shake = 0, flash = 0, flashColor = '#28e0c8';
 let combo = 1, comboTimer = 0, comboKills = 0;
+let brokeT = 0;
 let spawnTimer = 0, elapsed = 0;
 let hitStop = 0;
 let coinsFx = [];
@@ -554,7 +555,7 @@ function coinPop(){
 
 function spawnMegalodon(){
   const t = FISH_TYPES.megalodon;
-  const sz = clamp(Math.min(W,H)*0.15, 110, 220);   // ~1/4 of the screen
+  const sz = clamp(Math.min(W,H)*0.19, 150, 290);   // bigger boss
   const fromLeft = srand()<0.5;
   const y = srange(H*0.32, H*0.6);
   fish.push({ key:'megalodon', ...t, maxHp:t.hp, size:sz,
@@ -758,6 +759,7 @@ function update(dt){
   if (mode==='tournament'){
     timeLeft -= dt;
     if (timeLeft <= 0){ timeLeft = 0; return endGame(); }
+    if (credits < 1){ brokeT += dt; if (brokeT > 0.8) return endGame(); } else brokeT = 0;
   }
 
   // auto-fire while holding
@@ -1410,7 +1412,7 @@ requestAnimationFrame(loop);
 // ── start / end ──────────────────────────────────────────────────
 function startGame(){
   fish=[]; bullets=[]; particles=[]; pops=[]; rings=[];
-  score=0; credits=(mode==='free'?100000:START_CREDITS); creditsShown=credits; timeLeft=ROUND_TIME;
+  score=0; credits=(mode==='free'?100000:START_CREDITS); creditsShown=credits; timeLeft=ROUND_TIME; brokeT=0;
   combo=1; comboKills=0; comboTimer=0; spawnTimer=0; elapsed=0;
   shake=0; flash=0; wpnLevel=1; firing=false;
   stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
