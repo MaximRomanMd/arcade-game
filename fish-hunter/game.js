@@ -158,7 +158,7 @@ cannonImg.src = 'assets/cannon.png';
 const ANIM = {};
 [['minnow',0.013],['darter',0.014],['ray',0.012],['seacat',0.011],['angler',0.012],['golden',0.012],['levia',0.010],['shark',0.011],['whale',0.009],['megalodon',0.010]].forEach(function(e){
   const k=e[0], img=new Image(), o={img:img,cols:4,rows:4,frames:16,rate:e[1],ready:false};
-  img.onload=function(){ o.ready=true; }; img.src='assets/'+k+'-anim.png?v=3'; ANIM[k]=o;
+  img.onload=function(){ o.ready=true; }; img.src='assets/'+k+'-anim.png?v=4'; ANIM[k]=o;
 });
 
 // ===== CANNON SKINS =====
