@@ -123,7 +123,9 @@ let cannonSway = 0;              // gentle barrel motion on menu/splash
 let diveT = 0;                   // dive transition timer
 const DIVE_DUR = 2.3;           // seconds of the plunge
 let diveStreaks = [];
-let descent = 0;            // fast rising bubbles during the dive
+let descent = 0;
+let bgFish = [];
+let lurker = null, lurkerTimer = 16;            // fast rising bubbles during the dive
 
 // optional ludo.ai splash logo (assets/logo.png) — auto-used if present
 const logoImg = new Image();
@@ -431,6 +433,7 @@ function spawnCoinFx(x,y,n){
     coinsFx.push({ x:x+rand(-12,12), y:y+rand(-12,12), tx, ty, vx:rand(-50,50), vy:rand(-140,-40), t:0, delay:i*0.035 });
 }
 function updateFx(dt){
+  updateBgLife(dt);
   for (const c of coinsFx){
     if (c.delay>0){ c.delay-=dt; continue; }
     c.t += dt;
@@ -723,6 +726,53 @@ function update(dt){
 // ════════════════════════════════════════════════════════════════
 //  RENDER
 // ════════════════════════════════════════════════════════════════
+function spawnBgFish(){
+  const fromLeft = Math.random()<0.5; const y = rand(H*0.18, H*0.85);
+  bgFish.push({ x: fromLeft?-40:W+40, baseY:y, y, vx:(fromLeft?1:-1)*rand(14,28), size:rand(14,30),
+    dir:fromLeft?1:-1, phase:Math.random()*6.28, t:0, amp:rand(4,12), freq:rand(.6,1.2), a:rand(0.07,0.16) });
+}
+function spawnLurker(){
+  const fromLeft = Math.random()<0.5;
+  lurker = { x: fromLeft? W*0.2 : W*0.8, y: rand(H*0.5, H*0.78), vx:(fromLeft?1:-1)*rand(12,22),
+    dir:fromLeft?1:-1, size:rand(150,215), t:0, dur:rand(8,12) };
+}
+function updateBgLife(dt){
+  if (descent < 0.99) return;
+  for (const f of bgFish){ f.t+=dt; f.x+=f.vx*dt; f.y = f.baseY + Math.sin(f.t*f.freq+f.phase)*f.amp; }
+  bgFish = bgFish.filter(f => f.x>-70 && f.x<W+70);
+  while (bgFish.length < 5) spawnBgFish();
+  if (lurker){ lurker.t+=dt; lurker.x+=lurker.vx*dt; if (lurker.t>lurker.dur) lurker=null; }
+  else { lurkerTimer-=dt; if (lurkerTimer<=0){ spawnLurker(); lurkerTimer = rand(26,46); } }
+}
+function drawBgLife(){
+  if (descent < 0.99) return;
+  for (const f of bgFish){
+    ctx.save(); ctx.translate(f.x, f.y); if (f.dir<0) ctx.scale(-1,1);
+    ctx.globalAlpha = f.a; ctx.fillStyle = '#00060c';
+    ctx.beginPath(); ctx.ellipse(0,0,f.size,f.size*0.42,0,0,6.28); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-f.size*0.8,0); ctx.lineTo(-f.size*1.5,-f.size*0.42); ctx.lineTo(-f.size*1.5,f.size*0.42); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  if (lurker){
+    const L=lurker;
+    const vis = Math.min(clamp(L.t/1.6,0,1), clamp((L.dur-L.t)/1.6,0,1));
+    const breathe = 0.5+0.5*Math.sin(L.t*1.1);
+    ctx.save(); ctx.translate(L.x, L.y); if (L.dir<0) ctx.scale(-1,1);
+    ctx.globalAlpha = 0.22*vis;
+    const bgg = ctx.createRadialGradient(0,0,L.size*0.25,0,0,L.size*1.5);
+    bgg.addColorStop(0,'rgba(0,2,6,1)'); bgg.addColorStop(1,'rgba(0,2,6,0)');
+    ctx.fillStyle = bgg; ctx.beginPath(); ctx.ellipse(0,0,L.size*1.4,L.size*0.72,0,0,6.28); ctx.fill();
+    ctx.globalAlpha = 0.32*vis; ctx.fillStyle='rgba(0,3,9,1)';
+    ctx.beginPath(); ctx.ellipse(0,0,L.size,L.size*0.5,0,0,6.28); ctx.fill();
+    ctx.globalAlpha = (0.78+0.22*breathe)*vis;
+    ctx.shadowColor='#ff1818'; ctx.shadowBlur=26; ctx.fillStyle='#ff3030';
+    const er = L.size*0.05 + breathe*2;
+    ctx.beginPath(); ctx.arc(L.size*0.5, -L.size*0.1, er, 0,6.28); ctx.fill();
+    ctx.beginPath(); ctx.arc(L.size*0.5 + er*3.2, -L.size*0.05, er, 0,6.28); ctx.fill();
+    ctx.restore();
+  }
+}
+
 function drawBackground(time){
   const ts = time*0.001;
   const d = descent;
@@ -990,6 +1040,7 @@ function render(time){
   }
 
   drawBackground(time);
+  drawBgLife();
 
   // cinematic descent: rising bubbles + water speed-lines + pressure vignette
   if (phase === 'dive'){
