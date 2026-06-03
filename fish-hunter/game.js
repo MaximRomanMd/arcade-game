@@ -55,6 +55,10 @@ const FISH_TYPES = {
   angler : { hp:6,  value:70,  size:30, speed:110, color:'#ff7a59', glow:'#ffd2b0', weight:9,  coins:11, hunter:true },
   golden : { hp:9,  value:140, size:30, speed:160, color:'#ffce63', glow:'#fff1c2', weight:4,  coins:24, shiny:true },
   levia  : { hp:22, value:320, size:64, speed:55,  color:'#ffb13d', glow:'#ffe7a8', weight:1,  coins:60, boss:true },
+  seacat : { hp:12, value:100, size:42, speed:95,  color:'#9aa6b0', glow:'#d7e0e8', weight:6,  coins:18 },
+  shark  : { hp:18, value:200, size:58, speed:135, color:'#7f93a3', glow:'#cfe0ee', weight:3,  coins:35 },
+  whale  : { hp:32, value:450, size:95, speed:50,  color:'#3a78d0', glow:'#a9d0ff', weight:1,  coins:80 },
+  megalodon:{ hp:50, value:750, size:115, speed:70, color:'#5a6b7a', glow:'#cfe0ee', weight:0, coins:140, boss:true },
   jackpot: { hp:24, value:1000,size:74, speed:80,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:200, jackpot:true },
 };
 const TYPE_KEYS = Object.keys(FISH_TYPES);
@@ -99,6 +103,7 @@ let waves = [];
 let zoomPunch = 0, zx = 0, zy = 0;
 let powerups = [], puTimer = 7;
 let jackpotTimer = 32;
+let megTimer = 45, megAlert = 0, megPending = false;
 let freezeT = 0, doubleT = 0, multiT = 0;
 const POWERUPS = {
   freeze: { icon:'F',  color:'#7fd4ff', label:'FREEZE' },
@@ -257,6 +262,7 @@ function sfxCombo(n){ const f=480+n*80; blip({freq:f,type:'sine',dur:0.15,vol:0.
 function sfxDive(){ noiseBurst({dur:1.0,vol:0.4,freq:700,type:'lowpass',q:0.7}); blip({freq:420,type:'sine',dur:0.9,vol:0.13,slideTo:70}); }
 function sfxPower(){ blip({freq:520,type:'sine',dur:0.5,vol:0.16,slideTo:1300}); blip({freq:800,type:'triangle',dur:0.4,vol:0.1,slideTo:1700}); }
 function sfxJackpot(){ [523,659,784,1046,1318].forEach((fr,i)=>setTimeout(()=>blip({freq:fr,type:'sine',dur:0.45,vol:0.16,slideTo:fr*1.4}), i*90)); noiseBurst({dur:0.5,vol:0.18,freq:1200,type:'highpass'}); }
+function sfxAlert(){ blip({freq:170,type:'sawtooth',dur:0.7,vol:0.16,slideTo:110}); setTimeout(()=>blip({freq:190,type:'sawtooth',dur:0.7,vol:0.16,slideTo:120}),360); noiseBurst({dur:0.4,vol:0.09,freq:280,type:'lowpass'}); }
 function toggleMute(){
   muted = !muted;
   if (masterGain) masterGain.gain.value = muted ? 0 : 0.9;
@@ -537,6 +543,13 @@ function coinPop(){
   if (el){ el.classList.remove('coin-pop'); void el.offsetWidth; el.classList.add('coin-pop'); }
 }
 
+function spawnMegalodon(){
+  const t = FISH_TYPES.megalodon;
+  const fromLeft = srand()<0.5;
+  const y = srange(H*0.3, H*0.62);
+  fish.push({ key:'megalodon', ...t, maxHp:t.hp, x: fromLeft?-t.size*2:W+t.size*2, y, vx:(fromLeft?1:-1)*t.speed, vy:0, baseY:y, freq:srange(0.3,0.6), phase:srand()*6.28, t:0, wig:srand()*6.28, hitFlash:0 });
+  flash = 0.4; flashColor = '#ff3030'; shake = 14;
+}
 function spawnJackpot(){
   const t = FISH_TYPES.jackpot;
   const fromLeft = srand() < 0.5;
@@ -758,6 +771,9 @@ function update(dt){
   powerups = powerups.filter(pu => !pu._gone);
   jackpotTimer -= dt;
   if (jackpotTimer <= 0){ spawnJackpot(); jackpotTimer = srange(40, 70); }
+  megTimer -= dt;
+  if (megTimer <= 0){ megAlert = 1.6; megPending = true; megTimer = srange(80, 140); sfxAlert(); }
+  if (megAlert > 0){ megAlert -= dt; shake = Math.max(shake, 2.5); if (megAlert <= 0 && megPending){ megPending = false; spawnMegalodon(); } }
   if (freezeT>0) freezeT -= dt; if (doubleT>0) doubleT -= dt; if (multiT>0) multiT -= dt;
 
   decayCombo(dt);
@@ -1322,6 +1338,18 @@ function render(time){
   }
   if (coinsFx.length){
     for (const c of coinsFx){ if (c.delay>0) continue; drawCoin(c.x, c.y, c.r, c.spin); }
+  }
+  if (megAlert > 0){
+    const blink = Math.sin(performance.now()*0.018) > 0;
+    ctx.save();
+    ctx.globalAlpha = blink ? 0.4 : 0.18; ctx.fillStyle = '#ff2020';
+    ctx.fillRect(0,0,W,16); ctx.fillRect(0,H-16,W,16);
+    ctx.globalAlpha = 1; ctx.textAlign='center';
+    ctx.fillStyle = blink ? '#ff3838' : '#ffce63';
+    ctx.font = '900 '+Math.round(Math.min(W*0.055,50))+'px Segoe UI,sans-serif';
+    ctx.shadowColor='#ff2020'; ctx.shadowBlur=22;
+    ctx.fillText('!  MEGALODON INCOMING  !', W/2, H*0.28);
+    ctx.restore();
   }
   if (freezeT > 0){
     ctx.save(); ctx.globalAlpha = Math.min(0.22, freezeT*0.08);
