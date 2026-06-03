@@ -155,8 +155,8 @@ const SKINS = [
   { id:0, name:'STANDARD', file:'assets/cannon.png',   bullet:'#7ff0dd', cost:0,    tint:null },
   { id:1, name:'GOLD',     file:'assets/cannon-2.png', bullet:'#ffce63', cost:250,  tint:'#ffce63' },
   { id:2, name:'CRIMSON',  file:'assets/cannon-3.png', bullet:'#ff5d6c', cost:500,  tint:'#ff5d6c' },
-  { id:3, name:'VIOLET',   file:'assets/cannon-4.png', bullet:'#b07bff', cost:850,  tint:'#b07bff' },
-  { id:4, name:'EMERALD',  file:'assets/cannon-5.png', bullet:'#39e6c4', cost:1200, tint:'#39e6c4' },
+  { id:3, name:'VIOLET',   file:'assets/cannon-5.png', bullet:'#b07bff', cost:850,  tint:'#b07bff' },
+  { id:4, name:'EMERALD',  file:'assets/cannon-4.png', bullet:'#39e6c4', cost:1200, tint:'#39e6c4' },
 ];
 let skinId = parseInt(localStorage.getItem('fishhunter_skin')||'0',10) || 0;
 SKINS.forEach(sk => { sk.img=null; sk.tintImg=null; if(sk.id===0) return; const im=new Image(); im.onload=()=>{ sk.img=im; }; im.src=sk.file; });
@@ -1123,7 +1123,8 @@ function drawCannon(){
     ctx.translate(cannon.x, cannon.y);
     ctx.rotate(a + Math.PI/2);
     ctx.shadowColor = _ac; ctx.shadowBlur = 16;
-    ctx.drawImage(_cimg, -CN_TW/2, -CN_JOINT*CN_TH, CN_TW, CN_TH);
+    const _cw = CN_TH * ((_cimg.width/_cimg.height) || 0.756);
+    ctx.drawImage(_cimg, -_cw/2, -CN_JOINT*CN_TH, _cw, CN_TH);
     ctx.restore();
     return;
   }
