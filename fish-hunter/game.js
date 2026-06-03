@@ -87,6 +87,7 @@ let fish = [], bullets = [], particles = [], pops = [], rings = [], bubbles = []
 let aim = { x: W/2, y: H*0.4 };
 let firing = false, fireTimer = 0;
 let wpnLevel = 1;
+let fireMode = 'spread';
 let credits = START_CREDITS;
 let creditsShown = START_CREDITS;
 let score = 0, timeLeft = ROUND_TIME, shake = 0, flash = 0, flashColor = '#28e0c8';
@@ -315,12 +316,13 @@ window.addEventListener('keyup', e => { if (e.code === 'Space') firing = false; 
 
 document.getElementById('wpn-up').onclick   = () => setWpn(wpnLevel+1);
 document.getElementById('wpn-down').onclick = () => setWpn(wpnLevel-1);
+{ const mb=document.getElementById('wpn-mode'); if(mb) mb.onclick=()=>{ fireMode = fireMode==='spread'?'focus':'spread'; mb.textContent = fireMode==='focus'?'FOCUS':'SPREAD'; mb.classList.toggle('focus', fireMode==='focus'); setWpn(wpnLevel); }; }
 
 function setWpn(lv){
   wpnLevel = clamp(lv, 1, MAX_WPN_LV);
   document.getElementById('wpn-level').textContent = 'LV ' + wpnLevel;
   document.getElementById('wpn-cost').textContent  =
-    `cost ${wpnLevel} / shot · ${wpnLevel} dmg`;
+    fireMode==='focus' ? `cost ${wpnLevel} · 1 shot, ${wpnLevel} dmg` : `cost ${wpnLevel} · ${wpnLevel} shots, 1 dmg`;
 }
 
 // ── firing ───────────────────────────────────────────────────────
@@ -340,15 +342,16 @@ function tryFire(){
   const muzzleY = cannon.y + Math.sin(a)*bl;
   const speed = 720 + wpnLevel*40;
   // higher levels fire a tight spread of pellets
-  let pellets = wpnLevel;
-  if (multiT > 0) pellets = Math.max(pellets, 5);
-  const spread  = pellets > 1 ? (multiT>0?0.12:0.06) : 0;
+  let pellets, bdmg;
+  if (fireMode === 'focus'){ pellets = 1; bdmg = wpnLevel; }
+  else { pellets = wpnLevel; bdmg = 1; if (multiT > 0) pellets = Math.max(pellets, 5); }
+  const spread = pellets > 1 ? (multiT>0?0.12:0.07) : 0;
   for (let i=0;i<pellets;i++){
     const off = pellets>1 ? (i-(pellets-1)/2)*spread : 0;
     bullets.push({
       x:muzzleX, y:muzzleY,
       vx:Math.cos(a+off)*speed, vy:Math.sin(a+off)*speed,
-      dmg: wpnLevel, r: 4+wpnLevel, life: 1.4, trail: [], color: currentBulletColor(),
+      dmg: bdmg, r: 4 + (fireMode==='focus' ? wpnLevel*1.4 : wpnLevel), life: 1.4, trail: [], color: currentBulletColor(),
     });
   }
   // muzzle flash particles

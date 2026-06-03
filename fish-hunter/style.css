@@ -379,3 +379,8 @@ body.playing #weapon-bar{display:flex;}
 .lobby2-right{padding:16px;}
 .credits-stats{margin:8px 0 18px;text-align:left;}
 .credits-stats .st-row{font-size:14px;padding:8px 4px;border-bottom:1px solid rgba(70,200,210,.08);}
+
+/* fire-mode toggle */
+.wpn-mode{margin-left:8px;padding:8px 12px;border-radius:11px;font-size:11px;font-weight:800;letter-spacing:1px;cursor:pointer;color:var(--teal);background:rgba(40,224,200,.08);border:1px solid var(--glass-line);transition:.14s;white-space:nowrap;}
+.wpn-mode:hover{border-color:var(--teal);}
+.wpn-mode.focus{color:var(--gold);background:rgba(255,206,99,.1);border-color:var(--gold);}
