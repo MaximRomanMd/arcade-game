@@ -266,6 +266,7 @@ function toggleMute(){
 const rand = (a,b) => a + Math.random()*(b-a);
 const clamp = (v,a,b) => v<a?a:v>b?b:v;
 const formatNum = n => Number(n).toLocaleString('en-US');
+function hexA(h,a){ h=(h||'#28e0c8').replace('#',''); const n=parseInt(h,16); return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')'; }
 function _lerp(a,b,t){return a+(b-a)*t;}
 function _mix(c1,c2,t){return 'rgb('+Math.round(_lerp(c1[0],c2[0],t))+','+Math.round(_lerp(c1[1],c2[1],t))+','+Math.round(_lerp(c1[2],c2[2],t))+')';}
 
@@ -1101,10 +1102,27 @@ function drawCannon(){
   // ── ludo.ai cannon sprite: barrel (up in image) rotated to aim ──
   const _cimg = currentCannonImg();
   if (_cimg){
+    const _ac = (SKINS[skinId]||SKINS[0]).bullet;
+    const _t2 = performance.now()*0.004;
+    const _pulse = 0.6 + 0.4*Math.sin(_t2);
+    const _cy = cannon.y - CN_TH*0.18;
+    // soft pulsing aura behind the cannon
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    const _ag = ctx.createRadialGradient(cannon.x,_cy,4, cannon.x,_cy,CN_TH*0.55);
+    _ag.addColorStop(0, hexA(_ac, 0.32*_pulse)); _ag.addColorStop(1, hexA(_ac, 0));
+    ctx.fillStyle=_ag; ctx.beginPath(); ctx.arc(cannon.x,_cy,CN_TH*0.55,0,6.28); ctx.fill();
+    // orbiting energy sparks
+    for (let i=0;i<3;i++){
+      const _an=_t2*1.4 + i*2.094;
+      const _ox=cannon.x + Math.cos(_an)*CN_TW*0.5, _oy=_cy + Math.sin(_an)*CN_TH*0.16;
+      ctx.fillStyle=hexA(_ac,0.75); ctx.beginPath(); ctx.arc(_ox,_oy,2.4+_pulse,0,6.28); ctx.fill();
+    }
+    ctx.restore();
+    // cannon body, glow in skin colour
     ctx.save();
     ctx.translate(cannon.x, cannon.y);
     ctx.rotate(a + Math.PI/2);
-    ctx.shadowColor = '#28e0c8'; ctx.shadowBlur = 14;
+    ctx.shadowColor = _ac; ctx.shadowBlur = 16;
     ctx.drawImage(_cimg, -CN_TW/2, -CN_JOINT*CN_TH, CN_TW, CN_TH);
     ctx.restore();
     return;
