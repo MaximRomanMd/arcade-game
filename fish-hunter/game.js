@@ -71,10 +71,14 @@ TYPE_KEYS.forEach(k => {
   img.onload = () => { FISH_TYPES[k].sprite = img; };
   img.src = `assets/fish-${k}.png?t=${Date.now()}`;
 });
-// ray swim animation (ludo 5x5 = 25 frames, ~3s loop)
-const rayAnim = new Image(); let rayReady = false;
-rayAnim.onload = () => { rayReady = true; };
-rayAnim.src = `assets/ray-anim.png?t=${Date.now()}`;
+// per-fish ludo swim animations. add one [key,cols,rows,frames,rate] line per fish.
+const FISHANIM = {};
+[['ray',5,5,25,0.00833],['darter',5,5,25,0.00833]].forEach(function(e){
+  const o={img:new Image(), cols:e[1], rows:e[2], frames:e[3], rate:e[4], ready:false};
+  o.img.onload=function(){ o.ready=true; };
+  o.img.src=`assets/${e[0]}-anim.png?t=${Date.now()}`;
+  FISHANIM[e[0]]=o;
+});
 
 function pickType(elapsedFrac){
   // late game biases toward richer targets
@@ -1023,14 +1027,14 @@ function drawFish(f){
   if (f.vy !== undefined && (f.vx||f.vy)){ const _ang=Math.atan2(f.vy,f.vx||0.0001); ctx.rotate(_ang); if (Math.abs(_ang)>Math.PI/2) ctx.scale(1,-1); }
   else if (f.dir < 0) ctx.scale(-1,1);
   const s = f.size;
-  if ((f.spriteFrom||f.key)==='ray' && rayReady){
-    const cols=5, rows=5, frames=25;
-    const fw=rayAnim.width/cols, fh=rayAnim.height/rows;
-    const fr=Math.floor(performance.now()*0.00833)%frames;
-    const cxx=(fr%cols)*fw, cyy=Math.floor(fr/cols)*fh;
+  const _fa = FISHANIM[f.spriteFrom||f.key];
+  if (_fa && _fa.ready){
+    const fw=_fa.img.width/_fa.cols, fh=_fa.img.height/_fa.rows;
+    const fr=Math.floor(performance.now()*_fa.rate)%_fa.frames;
+    const cxx=(fr%_fa.cols)*fw, cyy=Math.floor(fr/_fa.cols)*fh;
     ctx.shadowBlur=0;
     const bw=s*3.8, bh=bw*fh/fw;            // keep frame aspect -> no distortion
-    ctx.drawImage(rayAnim, cxx, cyy, fw, fh, -bw/2, -bh/2, bw, bh);
+    ctx.drawImage(_fa.img, cxx, cyy, fw, fh, -bw/2, -bh/2, bw, bh);
     if (f.hitFlash>0){ ctx.globalAlpha=Math.min(0.85,f.hitFlash*7); ctx.fillStyle='#ff2222'; ctx.beginPath(); ctx.ellipse(0,0,s*1.4,s*0.92,0,0,6.28); ctx.fill(); ctx.globalAlpha=1; }
     if (f.maxHp>3 && f.hp<f.maxHp){ const wbar=s*1.9,hpf=f.hp/f.maxHp; ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-wbar/2,-s*1.5,wbar,5); ctx.fillStyle=hpf>0.5?'#39e6c4':hpf>0.25?'#ffce63':'#ff5d6c'; ctx.fillRect(-wbar/2,-s*1.5,wbar*hpf,5); }
     ctx.restore(); return;
