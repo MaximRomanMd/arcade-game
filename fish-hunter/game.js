@@ -1024,10 +1024,10 @@ function drawFish(f){
   const spr = (FISH_TYPES[_sk] && FISH_TYPES[_sk].sprite) || (f.jackpot && FISH_TYPES.golden ? FISH_TYPES.golden.sprite : null);
   if (spr && spr.complete){
     const _ox=-s*1.9, _oy=-s*1.2, _dw=s*3.8, _dh=s*2.4;
-    const _glow = f.shiny||f.boss||f.jackpot;
-    if (_glow){ ctx.shadowColor = f.glow; ctx.shadowBlur = 16; }
-    ctx.drawImage(spr, _ox, _oy, _dw, _dh);
-    if (_glow) ctx.shadowBlur = 0;
+    ctx.shadowBlur = 0;                       // no glow halo
+    const _bob = Math.sin(f.wig) * s * 0.05;  // gentle whole-body bob
+    ctx.rotate(Math.sin(f.wig*0.8) * 0.045);  // gentle sway, no pixel distortion
+    ctx.drawImage(spr, _ox, _oy + _bob, _dw, _dh);
     // damage flash — fish turns red when hit
     if (f.hitFlash > 0){
       ctx.globalAlpha = Math.min(0.85, f.hitFlash*7);
@@ -1047,7 +1047,7 @@ function drawFish(f){
 
   const tail = Math.sin(f.wig)*0.5;
   ctx.shadowColor = f.glow;
-  ctx.shadowBlur  = f.shiny||f.boss ? 30 : 16;
+  ctx.shadowBlur  = f.shiny||f.boss ? 14 : 0;
 
   // tail
   ctx.beginPath();
