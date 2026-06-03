@@ -147,19 +147,19 @@ sceneImg.src = 'assets/scene.png';
 
 // optional ludo.ai cannon turret (assets/cannon.png) — barrel pointing UP
 const cannonImg = new Image(); let cannonReady = false;
-cannonImg.onload = () => { cannonReady = true; makeTintedCannons(); };
+cannonImg.onload = () => { cannonReady = true; };
 cannonImg.src = 'assets/cannon.png';
 
 // ===== CANNON SKINS =====
 const SKINS = [
-  { id:0, name:'STANDARD', file:'assets/cannon.png',   bullet:'#7ff0dd', cost:0,    tint:null },
-  { id:1, name:'GOLD',     file:'assets/cannon-2.png', bullet:'#ffce63', cost:250,  tint:'#ffce63' },
-  { id:2, name:'CRIMSON',  file:'assets/cannon-3.png', bullet:'#ff5d6c', cost:500,  tint:'#ff5d6c' },
-  { id:3, name:'VIOLET',   file:'assets/cannon-5.png', bullet:'#b07bff', cost:850,  tint:'#b07bff' },
-  { id:4, name:'EMERALD',  file:'assets/cannon-4.png', bullet:'#39e6c4', cost:1200, tint:'#39e6c4' },
+  { file:'assets/cannon.png',   bullet:'#7ff0dd' },
+  { file:'assets/cannon-2.png', bullet:'#ffce63' },
+  { file:'assets/cannon-3.png', bullet:'#ff5d6c' },
+  { file:'assets/cannon-4.png', bullet:'#39e6c4' },
+  { file:'assets/cannon-5.png', bullet:'#b07bff' },
 ];
-let skinId = parseInt(localStorage.getItem('fishhunter_skin')||'0',10) || 0;
-SKINS.forEach(sk => { sk.img=null; sk.tintImg=null; if(sk.id===0) return; const im=new Image(); im.onload=()=>{ sk.img=im; }; im.src=sk.file; });
+let skinId = 0;
+SKINS.forEach((sk,i) => { if(i===0){ sk.img=cannonImg; return; } sk.img=null; const im=new Image(); im.onload=()=>{ sk.img=im; }; im.src=sk.file; });
 function makeTintedCannons(){
   if (!cannonReady) return;
   for (const sk of SKINS){
@@ -172,8 +172,8 @@ function makeTintedCannons(){
     sk.tintImg = oc;
   }
 }
-function currentCannonImg(){ const sk=SKINS[skinId]||SKINS[0]; if (sk.img&&sk.img.complete&&sk.img.naturalWidth) return sk.img; if (sk.tintImg) return sk.tintImg; return cannonReady?cannonImg:null; }
-function currentBulletColor(){ return (SKINS[skinId]||SKINS[0]).bullet; }
+function currentCannonImg(){ const sk=SKINS[clamp(wpnLevel-1,0,SKINS.length-1)]; if (sk&&sk.img&&sk.img.complete&&sk.img.naturalWidth) return sk.img; return cannonReady?cannonImg:null; }
+function currentBulletColor(){ return (SKINS[clamp(wpnLevel-1,0,SKINS.length-1)]||SKINS[0]).bullet; }
 function shopOwned(){ try{ return new Set(JSON.parse(localStorage.getItem('fishhunter_skins_owned')||'[0]')); }catch(e){ return new Set([0]); } }
 function shopAvail(){ return Math.max(0, ls(K.coins) - ls('fishhunter_spent')); }
 function renderShop(){
@@ -1102,7 +1102,7 @@ function drawCannon(){
   // ── ludo.ai cannon sprite: barrel (up in image) rotated to aim ──
   const _cimg = currentCannonImg();
   if (_cimg){
-    const _ac = (SKINS[skinId]||SKINS[0]).bullet;
+    const _ac = currentBulletColor();
     const _t2 = performance.now()*0.004;
     const _pulse = 0.6 + 0.4*Math.sin(_t2);
     const _cy = cannon.y - CN_TH*0.18;
@@ -1454,8 +1454,7 @@ document.getElementById('btn-start').onclick = startGame;
 const _sm = document.getElementById('soon-msg');
 function showSoon(w){ if(_sm){ _sm.textContent = w + ' - coming soon'; _sm.classList.add('show'); clearTimeout(showSoon._t); showSoon._t=setTimeout(()=>_sm.classList.remove('show'),1900); } }
 { const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>showSoon('Multiplayer'); }
-{ const b=document.getElementById('btn-shop'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-shop'); if(o){ o.classList.remove('hidden'); renderShop(); } }; }
-{ const b=document.getElementById('shop-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-shop'); if(o) o.classList.add('hidden'); }; }
+{ const b=document.getElementById('btn-shop'); if(b) b.onclick=()=>showSoon('Shop'); }
 document.getElementById('btn-again').onclick = () => { startGame(); };
 document.getElementById('exit-btn').onclick = exitToMenu;
 document.getElementById('mute-btn').onclick = toggleMute;
