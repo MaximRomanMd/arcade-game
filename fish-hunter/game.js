@@ -387,7 +387,7 @@ function killFish(f){
   addKillCombo();
 
   // explosion particles
-  const n = f.boss ? 60 : f.value>=70 ? 42 : f.value>=30 ? 30 : 18;
+  const n = f.boss ? 38 : f.value>=70 ? 24 : f.value>=30 ? 16 : 9;
   for (let i=0;i<n;i++){
     const a = Math.random()*6.28, sp = rand(40, f.boss?420:240);
     particles.push({ x:f.x, y:f.y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
@@ -395,7 +395,7 @@ function killFish(f){
       c: Math.random()<0.5 ? f.color : f.glow });
   }
   // gold coin sparkle burst
-  for (let i=0;i<Math.min(f.coins,18);i++){
+  for (let i=0;i<Math.min(f.coins,6);i++){
     const a=Math.random()*6.28, sp=rand(60,200);
     particles.push({ x:f.x, y:f.y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp-60,
       r:rand(1.5,3), life:rand(.5,1), max:1, c:'#ffce63', grav:280 });
@@ -408,7 +408,7 @@ function killFish(f){
   // extra juice: core flash, shards, second shockwave
   const big = f.boss || f.value >= 30;
   particles.push({ x:f.x, y:f.y, vx:0, vy:0, r:f.size*(f.boss?2.6:1.6), life:.18, max:.18, c:'#ffffff' });
-  for (let i=0;i<(f.boss?26:big?14:8);i++){
+  for (let i=0;i<(f.boss?16:big?8:4);i++){
     const a=Math.random()*6.28, sp=rand(160, f.boss?620:360);
     particles.push({ x:f.x, y:f.y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
       r:rand(1,2.4), life:rand(.25,.5), max:.5, c:f.glow, grav:120 });
@@ -417,7 +417,7 @@ function killFish(f){
   shake = Math.min(shake + (f.boss?18:f.value>=70?11:f.value>=30?7:3), 24);
   if (big){ flash = f.boss?0.55:0.38; flashColor = f.glow; hitStop = f.boss?0.09:0.05; }
   spawnCoinFx(f.x, f.y, Math.min(f.coins, f.boss?16:6));
-  for (let i=0;i<6;i++){ const a=Math.random()*6.28, dd=rand(10,f.size*1.8);
+  for (let i=0;i<4;i++){ const a=Math.random()*6.28, dd=rand(10,f.size*1.8);
     particles.push({ x:f.x+Math.cos(a)*dd, y:f.y+Math.sin(a)*dd, vx:0,vy:0, r:rand(2,4), life:rand(.3,.6), max:.6, c:'#fff7d0', star:true }); }
   waves.push({x:f.x,y:f.y,r:f.size*0.4,max:f.size*3 + f.value*2.2,life:big?.6:.42,maxLife:big?.6:.42});
   if (f.boss){ zoomPunch = 0.28; zx = f.x; zy = f.y; }
@@ -873,6 +873,17 @@ function drawBackground(time){
   }
   ctx.restore();
 
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  for (let i=0;i<16;i++){
+    const sd=i*7.13;
+    const bx=((Math.sin(sd)*9301+ts*7*(0.2+(i%3)*0.05))%1+1)%1*W;
+    const by=((Math.cos(sd)*4929 - ts*4*(0.15+(i%4)*0.05))%1+1)%1*H;
+    const pulse=0.4+0.6*Math.abs(Math.sin(ts*1.5+i));
+    ctx.fillStyle='rgba(120,255,220,'+(0.22*pulse*d).toFixed(3)+')';
+    ctx.beginPath(); ctx.arc(bx,by,1.5+pulse,0,6.28); ctx.fill();
+  }
+  ctx.restore();
+
   if (!sceneReady && d > 0.5){
     const ka = Math.min(1,(d-0.5)/0.5);
     ctx.save(); ctx.globalAlpha = ka;
@@ -896,6 +907,15 @@ function drawBackground(time){
       ctx.quadraticCurveTo(kx + sway + Math.sin(ts+k)*12, H-h1-18, kx + sway + Math.sin(ts+k)*4, H-h1-30);
       ctx.stroke();
     }
+    const _cc=['#c0397a','#7a3fd0','#e0683a','#2bb0a0','#d04a8a','#3a78d0'], _CN=9;
+    for (let k=0;k<_CN;k++){
+      const cx=(W/_CN)*k + ((k*61)%46) + 16, cy=H-16-(k%3)*7, sway2=Math.sin(ts*0.6+k)*3;
+      ctx.fillStyle=_cc[k%_cc.length]; ctx.globalAlpha=ka*0.8;
+      for (let b=0;b<4;b++){ const bx=cx+(b-1.5)*9+sway2*(b-1.5)*0.3, bh=20+(b%2)*14+(k%2)*6;
+        ctx.beginPath(); ctx.ellipse(bx, cy-bh*0.5, 4.5, bh*0.5, 0,0,6.28); ctx.fill();
+        ctx.beginPath(); ctx.arc(bx, cy-bh, 4.5,0,6.28); ctx.fill(); }
+    }
+    ctx.globalAlpha=ka;
     ctx.restore();
   }
 
