@@ -69,7 +69,7 @@ TYPE_KEYS.forEach(k => {
   if (FISH_TYPES[k].spriteFrom) return;
   const img = new Image();
   img.onload = () => { FISH_TYPES[k].sprite = img; };
-  img.src = `assets/fish-${k}.png`;
+  img.src = `assets/fish-${k}.png?v=5`;
 });
 
 function pickType(elapsedFrac){
@@ -155,11 +155,7 @@ sceneImg.src = 'assets/scene.png';
 const cannonImg = new Image(); let cannonReady = false;
 cannonImg.onload = () => { cannonReady = true; };
 cannonImg.src = 'assets/cannon.png';
-const ANIM = {};
-[['minnow',0.013],['darter',0.014],['ray',0.012],['seacat',0.011],['angler',0.012],['golden',0.012],['levia',0.010],['shark',0.011],['whale',0.009],['megalodon',0.010]].forEach(function(e){
-  const k=e[0], img=new Image(), o={img:img,cols:4,rows:4,frames:16,rate:e[1],ready:false};
-  img.onload=function(){ o.ready=true; }; img.src='assets/'+k+'-anim.png?v=4'; ANIM[k]=o;
-});
+// fish use clean static ludo sprites (no procedural warp)
 
 // ===== CANNON SKINS =====
 const SKINS = [
@@ -1023,38 +1019,14 @@ function drawFish(f){
   if (f.vy !== undefined && (f.vx||f.vy)){ const _ang=Math.atan2(f.vy,f.vx||0.0001); ctx.rotate(_ang); if (Math.abs(_ang)>Math.PI/2) ctx.scale(1,-1); }
   else if (f.dir < 0) ctx.scale(-1,1);
   const s = f.size;
-  const _ak = f.spriteFrom || f.key;
-  let _an = ANIM[_ak]; if (!_an && f.jackpot) _an = ANIM['golden'];
-  if (_an && _an.ready){
-    const fw=_an.img.width/_an.cols, fh=_an.img.height/_an.rows;
-    if (f.animOff===undefined) f.animOff = Math.random()*_an.frames;
-    const fr=Math.floor(performance.now()*_an.rate + f.animOff)%_an.frames;
-    const cxx=(fr%_an.cols)*fw, cyy=Math.floor(fr/_an.cols)*fh;
-    const _glow=f.shiny||f.boss||f.jackpot;
-    if (_glow){ ctx.shadowColor=f.glow; ctx.shadowBlur=16; }
-    ctx.drawImage(_an.img, cxx, cyy, fw, fh, -s*1.9, -s*1.2, s*3.8, s*2.4);
-    if (_glow) ctx.shadowBlur=0;
-    if (f.hitFlash>0){ ctx.globalAlpha=Math.min(0.85,f.hitFlash*7); ctx.fillStyle='#ff2222'; ctx.beginPath(); ctx.ellipse(0,0,s*1.4,s*0.92,0,0,6.28); ctx.fill(); ctx.globalAlpha=1; }
-    if (f.maxHp>3 && f.hp<f.maxHp){ const wbar=s*1.9,hpf=f.hp/f.maxHp; ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-wbar/2,-s*1.5,wbar,5); ctx.fillStyle=hpf>0.5?'#39e6c4':hpf>0.25?'#ffce63':'#ff5d6c'; ctx.fillRect(-wbar/2,-s*1.5,wbar*hpf,5); }
-    ctx.restore(); return;
-  }
-
   // ── sprite hook (ludo.ai): use bitmap if provided ──
   const _sk = f.spriteFrom || f.key;
   const spr = (FISH_TYPES[_sk] && FISH_TYPES[_sk].sprite) || (f.jackpot && FISH_TYPES.golden ? FISH_TYPES.golden.sprite : null);
   if (spr && spr.complete){
     const _ox=-s*1.9, _oy=-s*1.2, _dw=s*3.8, _dh=s*2.4;
-    const _N=(f.size>52?16:f.size>28?12:f.size>18?9:6), _sw=spr.naturalWidth||spr.width, _sh=spr.naturalHeight||spr.height;
-    const _ss=_sw/_N, _sd=_dw/_N, _sp=f.wig;
-    const _bigSwim = f.boss || f.size > 52;
     const _glow = f.shiny||f.boss||f.jackpot;
     if (_glow){ ctx.shadowColor = f.glow; ctx.shadowBlur = 16; }
-    for (let _i=0;_i<_N;_i++){
-      const _t=1-_i/(_N-1);                 // 1 at tail .. 0 at head
-      const _amp=_bigSwim ? (0.2+0.8*_t)*s*0.34 : _t*_t*s*0.42;              // gentle near body, strong only at the very tail
-      const _yo=Math.sin((_bigSwim?_sp*0.8:_sp*1.5) + _t*(_bigSwim?2.6:1.6))*_amp;
-      ctx.drawImage(spr, _i*_ss,0,_ss,_sh, _ox+_i*_sd-0.8, _oy+_yo, _sd+2, _dh);
-    }
+    ctx.drawImage(spr, _ox, _oy, _dw, _dh);
     if (_glow) ctx.shadowBlur = 0;
     // damage flash — fish turns red when hit
     if (f.hitFlash > 0){
