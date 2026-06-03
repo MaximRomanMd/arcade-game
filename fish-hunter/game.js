@@ -432,12 +432,10 @@ coinImg.onload=()=>{ coinReady=true; }; coinImg.src='assets/coin.png';
 function drawCoin(x,y,r,spin){
   const sx = Math.max(0.14, Math.abs(Math.cos(spin)));
   ctx.save(); ctx.translate(x,y); ctx.scale(sx,1);
-  ctx.shadowColor='#ffb020'; ctx.shadowBlur=12;
   if (coinReady){ ctx.drawImage(coinImg, -r, -r, r*2, r*2); ctx.restore(); return; }
   const g=ctx.createRadialGradient(-r*0.3,-r*0.3,r*0.15,0,0,r);
   g.addColorStop(0,'#fff0bf'); g.addColorStop(0.5,'#ffce63'); g.addColorStop(1,'#dd9418');
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,r,0,6.28); ctx.fill();
-  ctx.shadowBlur=0;
   ctx.strokeStyle='#b8801a'; ctx.lineWidth=r*0.13; ctx.beginPath(); ctx.arc(0,0,r*0.9,0,6.28); ctx.stroke();
   ctx.fillStyle='#9a6b12';
   ctx.beginPath(); ctx.ellipse(r*0.06,0,r*0.4,r*0.22,0,0,6.28); ctx.fill();
@@ -692,7 +690,7 @@ function update(dt){
     if (srand() < 0.4) spawnFish(srand() < 0.3);
     spawnTimer = interval * srange(0.7,1.3);
   }
-  if (fish.length < 9) spawnFish(srand()<0.5); // keep the sea busy
+  if (fish.length < 8) spawnFish(srand()<0.5); // keep the sea busy
   puTimer -= dt;
   if (puTimer <= 0){ spawnPowerup(); puTimer = srange(9, 15); }
   for (const pu of powerups){ pu.t += dt; pu.x += pu.vx*dt; pu.y = pu.baseY + Math.sin(pu.t*1.5 + pu.phase)*14;
@@ -927,16 +925,17 @@ function drawFish(f){
   const spr = (FISH_TYPES[_sk] && FISH_TYPES[_sk].sprite) || (f.jackpot && FISH_TYPES.golden ? FISH_TYPES.golden.sprite : null);
   if (spr && spr.complete){
     const _ox=-s*1.9, _oy=-s*1.2, _dw=s*3.8, _dh=s*2.4;
-    const _N=(f.size>28?14:f.size>18?10:7), _sw=spr.naturalWidth||spr.width, _sh=spr.naturalHeight||spr.height;
+    const _N=(f.size>28?12:f.size>18?9:6), _sw=spr.naturalWidth||spr.width, _sh=spr.naturalHeight||spr.height;
     const _ss=_sw/_N, _sd=_dw/_N, _sp=f.wig;
-    ctx.shadowColor = f.glow; ctx.shadowBlur = f.shiny||f.boss ? 20 : 13;
+    const _glow = f.shiny||f.boss||f.jackpot;
+    if (_glow){ ctx.shadowColor = f.glow; ctx.shadowBlur = 16; }
     for (let _i=0;_i<_N;_i++){
       const _t=1-_i/(_N-1);                 // 1 at tail .. 0 at head
       const _amp=_t*_t*s*0.42;              // gentle near body, strong only at the very tail
       const _yo=Math.sin(_sp*1.5 + _t*1.6)*_amp;
       ctx.drawImage(spr, _i*_ss,0,_ss,_sh, _ox+_i*_sd-0.8, _oy+_yo, _sd+2, _dh);
     }
-    ctx.shadowBlur = 0;
+    if (_glow) ctx.shadowBlur = 0;
     // damage flash — fish turns red when hit
     if (f.hitFlash > 0){
       ctx.globalAlpha = Math.min(0.85, f.hitFlash*7);
