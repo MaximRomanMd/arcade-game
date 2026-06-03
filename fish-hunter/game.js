@@ -92,6 +92,15 @@ let hitStop = 0;
 let coinsFx = [];
 let waves = [];
 let zoomPunch = 0, zx = 0, zy = 0;
+let powerups = [], puTimer = 7;
+let freezeT = 0, doubleT = 0, multiT = 0;
+const POWERUPS = {
+  freeze: { icon:'F',  color:'#7fd4ff', label:'FREEZE' },
+  frenzy: { icon:'x2', color:'#ffce63', label:'FRENZY' },
+  multi:  { icon:'M',  color:'#28e0c8', label:'MULTI'  },
+  bomb:   { icon:'B',  color:'#ff5d6c', label:'BOMB'   },
+};
+const PU_KEYS = ['freeze','frenzy','multi','bomb'];
 let stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
 const cannon = { x: W/2, y: H, len: 46 };
 // cannon sprite geometry (measured from cannon.png): joint at 66% down, ratio 0.756
@@ -191,6 +200,7 @@ function sfxKill(big){ noiseBurst({dur:big?0.6:0.28,vol:big?0.5:0.3,freq:big?480
 function sfxCoin(){ blip({freq:1300,type:'sine',dur:0.12,vol:0.08,slideTo:2050}); }
 function sfxCombo(n){ const f=480+n*80; blip({freq:f,type:'sine',dur:0.15,vol:0.12,slideTo:f*1.5}); }
 function sfxDive(){ noiseBurst({dur:1.0,vol:0.4,freq:700,type:'lowpass',q:0.7}); blip({freq:420,type:'sine',dur:0.9,vol:0.13,slideTo:70}); }
+function sfxPower(){ blip({freq:520,type:'sine',dur:0.5,vol:0.16,slideTo:1300}); blip({freq:800,type:'triangle',dur:0.4,vol:0.1,slideTo:1700}); }
 function toggleMute(){
   muted = !muted;
   if (masterGain) masterGain.gain.value = muted ? 0 : 0.9;
@@ -271,8 +281,9 @@ function tryFire(){
   const muzzleY = cannon.y + Math.sin(a)*bl;
   const speed = 720 + wpnLevel*40;
   // higher levels fire a tight spread of pellets
-  const pellets = wpnLevel >= 4 ? 3 : wpnLevel >= 2 ? 2 : 1;
-  const spread  = pellets > 1 ? 0.06 : 0;
+  let pellets = wpnLevel >= 4 ? 3 : wpnLevel >= 2 ? 2 : 1;
+  if (multiT > 0) pellets = Math.max(pellets, 5);
+  const spread  = pellets > 1 ? (multiT>0?0.12:0.06) : 0;
   for (let i=0;i<pellets;i++){
     const off = pellets>1 ? (i-(pellets-1)/2)*spread : 0;
     bullets.push({
@@ -357,9 +368,10 @@ function hurtFish(f, dmg, bx, by){
 }
 
 function killFish(f){
-  const gained = Math.round(f.value * combo);
+  const mult = doubleT > 0 ? 2 : 1;
+  const gained = Math.round(f.value * combo) * mult;
   score += gained;
-  credits += f.coins;
+  credits += f.coins * mult;
   stats.kills++; stats.coins += f.coins;
   sfxKill(f.boss || f.shiny); sfxCoin();
   if (f.value > stats.biggestVal){ stats.biggestVal = f.value; stats.biggest = labelFor(f.key); }
@@ -427,6 +439,25 @@ function updateFx(dt){
 function coinPop(){
   const el = document.getElementById('hud-credits');
   if (el){ el.classList.remove('coin-pop'); void el.offsetWidth; el.classList.add('coin-pop'); }
+}
+
+function spawnPowerup(){
+  const key = PU_KEYS[(srand()*PU_KEYS.length)|0];
+  const fromLeft = srand() < 0.5;
+  const y = srange(H*0.18, H*0.62);
+  powerups.push({ key, x: fromLeft?-30:W+30, y, baseY:y, vx:(fromLeft?1:-1)*srange(48,78), t:0, phase:srand()*6.28, r:19 });
+}
+function activatePowerup(pu){
+  const cfg = POWERUPS[pu.key];
+  if (pu.key==='freeze') freezeT = 4.5;
+  else if (pu.key==='frenzy') doubleT = 7;
+  else if (pu.key==='multi') multiT = 7;
+  else if (pu.key==='bomb'){ for (const f of [...fish]) hurtFish(f, 999, f.x, f.y); shake = 22; }
+  flash = Math.max(flash, 0.45); flashColor = cfg.color;
+  rings.push({ x:pu.x, y:pu.y, r:10, max:Math.max(W,H), life:.5, c:cfg.color });
+  pops.push({ x:pu.x, y:pu.y, txt:cfg.label+'!', life:1.2, max:1.2, c:cfg.color, big:true });
+  sfxPower();
+  const i = powerups.indexOf(pu); if (i>=0) powerups.splice(i,1);
 }
 
 function labelFor(k){
@@ -580,13 +611,20 @@ function update(dt){
     spawnTimer = interval * srange(0.7,1.3);
   }
   if (fish.length < 4) spawnFish(srand()<0.5); // keep the sea alive
+  puTimer -= dt;
+  if (puTimer <= 0){ spawnPowerup(); puTimer = srange(9, 15); }
+  for (const pu of powerups){ pu.t += dt; pu.x += pu.vx*dt; pu.y = pu.baseY + Math.sin(pu.t*1.5 + pu.phase)*14;
+    if (pu.x < -50 || pu.x > W+50) pu._gone = true; }
+  powerups = powerups.filter(pu => !pu._gone);
+  if (freezeT>0) freezeT -= dt; if (doubleT>0) doubleT -= dt; if (multiT>0) multiT -= dt;
 
   decayCombo(dt);
 
   // fish motion
+  const tscale = freezeT > 0 ? 0.12 : 1;
   for (const f of fish){
-    f.t += dt; f.wig += dt*8;
-    f.x += f.vx * dt;
+    f.t += dt*tscale; f.wig += dt*8;
+    f.x += f.vx * dt * tscale;
     f.y = f.baseY + Math.sin(f.t*f.freq*3 + f.phase) * f.amp;
     if (f.hitFlash > 0) f.hitFlash -= dt;
     if (f.x < -f.size*3 || f.x > W + f.size*3) f._gone = true;
@@ -605,6 +643,10 @@ function update(dt){
         hurtFish(f, b.dmg, b.x, b.y);
         b.life = 0; break;
       }
+    }
+    if (b.life>0) for (const pu of powerups){
+      const dx=pu.x-b.x, dy=pu.y-b.y;
+      if (dx*dx+dy*dy < (pu.r+b.r+6)*(pu.r+b.r+6)){ activatePowerup(pu); b.life=0; break; }
     }
   }
   bullets = bullets.filter(b => b.life > 0);
@@ -928,6 +970,17 @@ function render(time){
 
   fish.forEach(drawFish);
 
+  for (const pu of powerups){
+    const cfg = POWERUPS[pu.key];
+    ctx.save(); ctx.shadowColor = cfg.color; ctx.shadowBlur = 18;
+    const g = ctx.createRadialGradient(pu.x,pu.y,2,pu.x,pu.y,pu.r);
+    g.addColorStop(0,'#ffffff'); g.addColorStop(0.4,cfg.color); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(pu.x,pu.y,pu.r,0,6.28); ctx.fill();
+    ctx.shadowBlur=0; ctx.fillStyle='#03161a'; ctx.font='800 15px Segoe UI,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(cfg.icon, pu.x, pu.y+1);
+    ctx.textBaseline='alphabetic'; ctx.restore();
+  }
+
   // bullets
   ctx.save(); ctx.globalCompositeOperation='lighter';
   for (const b of bullets){
@@ -994,6 +1047,30 @@ function render(time){
       ctx.beginPath(); ctx.arc(c.x,c.y,3.2,0,6.28); ctx.fill();
     }
     ctx.restore();
+  }
+  if (freezeT > 0){
+    ctx.save(); ctx.globalAlpha = Math.min(0.22, freezeT*0.08);
+    const fg = ctx.createLinearGradient(0,0,0,H);
+    fg.addColorStop(0,'rgba(160,225,255,0.6)'); fg.addColorStop(1,'rgba(120,200,255,0.1)');
+    ctx.fillStyle = fg; ctx.fillRect(0,0,W,H); ctx.restore();
+  }
+  if (phase==='playing'){
+    const act = [];
+    if (freezeT>0) act.push(['FREEZE','#7fd4ff',freezeT,4.5]);
+    if (doubleT>0) act.push(['FRENZY x2','#ffce63',doubleT,7]);
+    if (multiT>0)  act.push(['MULTI-SHOT','#28e0c8',multiT,7]);
+    let ax = W/2 - act.length*56;
+    for (const a of act){
+      ctx.save();
+      ctx.fillStyle='rgba(8,30,46,0.82)'; ctx.strokeStyle=a[1]; ctx.lineWidth=1.5;
+      roundRect(ax, 12, 104, 28, 8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=a[1]; ctx.font='800 11px Segoe UI,sans-serif'; ctx.textAlign='left';
+      ctx.fillText(a[0], ax+9, 27);
+      ctx.fillStyle='rgba(255,255,255,0.22)'; ctx.fillRect(ax+9, 31, 86, 3);
+      ctx.fillStyle=a[1]; ctx.fillRect(ax+9, 31, 86*Math.min(1,a[2]/a[3]), 3);
+      ctx.restore();
+      ax += 112;
+    }
   }
 }
 
