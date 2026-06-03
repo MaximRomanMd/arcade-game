@@ -338,3 +338,14 @@ body.playing #weapon-bar{display:flex;}
 .weekly-lb{max-height:240px;overflow:auto;}
 .weekly-lb .lb-empty{font-size:11px;color:var(--ink-dim);text-align:center;padding:24px 6px;}
 @media (max-width:560px){ .lobby2-cols{flex-direction:column;align-items:stretch;} .lobby2-left,.lobby2-right{width:100%;} }
+
+/* daily reward + victory confetti + prize */
+.ov-card{position:relative;}
+.ov-card.record{box-shadow:0 0 60px rgba(255,206,99,.5),0 20px 70px rgba(0,0,0,.6);}
+.confetti-wrap{position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:22px;}
+.confetti{position:absolute;top:-18px;width:8px;height:14px;border-radius:2px;animation:confFall linear forwards;}
+@keyframes confFall{from{transform:translateY(-18px) rotate(0);}to{transform:translateY(560px) rotate(720deg);}}
+.dr-claim{width:100%;padding:11px;border:none;border-radius:12px;cursor:pointer;font-weight:800;letter-spacing:1px;font-size:13px;color:#2a1c00;background:linear-gradient(135deg,#ffce63,#ffe7a8);box-shadow:0 6px 20px rgba(255,206,99,.4);animation:dailyGlow 2.4s ease-in-out infinite;}
+.dr-claim:hover{transform:translateY(-1px);}
+.dr-done{font-size:11px;color:var(--ink-dim);text-align:center;padding:6px;letter-spacing:.5px;}
+.prize-line{font-size:10px;letter-spacing:1.5px;color:var(--gold);text-align:center;font-weight:800;margin:-4px 0 10px;}

@@ -572,6 +572,24 @@ function updateDive(dt){
 }
 
 // populate the lobby menu: logo, daily challenge, your stats, leaderboard
+function todayStr(){ const d=new Date(); return d.getUTCFullYear()+'-'+(d.getUTCMonth()+1)+'-'+d.getUTCDate(); }
+function dailyState(){ const last=localStorage.getItem('fishhunter_last_claim')||''; const streak=parseInt(localStorage.getItem('fishhunter_streak')||'0',10); return {claimed:last===todayStr(), last, streak}; }
+function pendingStreak(st){ const y=new Date(Date.now()-86400000); const ys=y.getUTCFullYear()+'-'+(y.getUTCMonth()+1)+'-'+y.getUTCDate(); return st.last===ys ? st.streak+1 : 1; }
+function claimDaily(){ const st=dailyState(); if(st.claimed) return; const streak=pendingStreak(st); const reward=Math.min(500,50+(streak-1)*25);
+  lsS(K.coins, ls(K.coins)+reward); localStorage.setItem('fishhunter_last_claim', todayStr()); localStorage.setItem('fishhunter_streak', String(streak));
+  initAudio(); sfxJackpot(); renderDaily();
+  const el=document.getElementById('soon-msg'); if(el){ el.textContent='+'+reward+' credits!  Day '+streak+' streak'; el.classList.add('show'); clearTimeout(claimDaily._t); claimDaily._t=setTimeout(()=>el.classList.remove('show'),2600); } }
+function renderDaily(){ const box=document.getElementById('daily-reward'); if(!box) return; const st=dailyState();
+  if(st.claimed){ box.innerHTML='<div class="dr-done">Daily claimed - Day '+st.streak+' streak. Back tomorrow!</div>'; }
+  else { const streak=pendingStreak(st); const reward=Math.min(500,50+(streak-1)*25);
+    box.innerHTML='<button class="dr-claim" id="dr-claim">CLAIM DAILY  +'+reward+'  (Day '+streak+')</button>';
+    const b=document.getElementById('dr-claim'); if(b) b.onclick=claimDaily; } }
+function celebrate(){ const card=document.querySelector('#overlay-end .ov-card'); if(!card) return;
+  let wrap=card.querySelector('.confetti-wrap'); if(!wrap){ wrap=document.createElement('div'); wrap.className='confetti-wrap'; card.appendChild(wrap); } wrap.innerHTML='';
+  const cols=['#ffce63','#28e0c8','#ff7a59','#b07bff','#ffffff'];
+  for(let i=0;i<44;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=(Math.random()*100)+'%'; c.style.background=cols[(Math.random()*cols.length)|0]; c.style.animationDuration=(1.4+Math.random()*1.6)+'s'; c.style.animationDelay=(Math.random()*0.5)+'s'; wrap.appendChild(c); }
+  setTimeout(()=>{ if(wrap) wrap.innerHTML=''; }, 4000); }
+
 function renderMenu(){
   if (logoImg.complete && logoImg.naturalWidth > 0){
     const li = document.getElementById('menu-logo-img');
@@ -581,6 +599,7 @@ function renderMenu(){
   }
   const md = document.getElementById('menu-daily');
   if (md) md.textContent = `DAILY CHALLENGE #${dailySeed()}  -  same fish for all`;
+  renderDaily();
   const ml = document.getElementById('menu-lb');
   if (ml){
     const wk = weekId();
@@ -1195,6 +1214,8 @@ function endGame(){
     }).join('');
   } else lbEl.innerHTML = '';
 
+  { const _c=document.querySelector('#overlay-end .ov-card'); if(_c) _c.classList.toggle('record', isPB); }
+  if (isPB) celebrate();
   document.getElementById('overlay-end').classList.remove('hidden');
 }
 
