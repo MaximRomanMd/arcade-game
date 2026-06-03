@@ -366,7 +366,7 @@ function decayCombo(dt){
 
 // ── kill / hit fx ────────────────────────────────────────────────
 function hurtFish(f, dmg, bx, by){
-  f.hp -= dmg; f.hitFlash = 0.12;
+  f.hp -= dmg; f.hitFlash = 0.18;
   stats.hits++;
   sfxHit();
   for (let i=0;i<5;i++){
@@ -883,14 +883,22 @@ function drawFish(f){
   // ── sprite hook (ludo.ai): use bitmap if provided ──
   const spr = (FISH_TYPES[f.key] && FISH_TYPES[f.key].sprite) || (f.jackpot && FISH_TYPES.golden ? FISH_TYPES.golden.sprite : null);
   if (spr && spr.complete){
+    const _ox=-s*1.9, _oy=-s*1.2, _dw=s*3.8, _dh=s*2.4;
     ctx.shadowColor = f.glow; ctx.shadowBlur = f.shiny||f.boss ? 26 : 16;
-    ctx.drawImage(spr, -s*1.9, -s*1.2, s*3.8, s*2.4);
+    ctx.globalAlpha = 0.4; ctx.drawImage(spr, _ox, _oy, _dw, _dh); ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
-    // hit flash — quick white pulse over the fish
+    const _N=9, _sw=spr.naturalWidth||spr.width, _sh=spr.naturalHeight||spr.height;
+    const _ss=_sw/_N, _sd=_dw/_N, _sp=f.wig;
+    for (let _i=0;_i<_N;_i++){
+      const _amp=(1-_i/(_N-1))*s*0.15;
+      const _yo=Math.sin(_sp*1.6 + _i*0.7)*_amp;
+      ctx.drawImage(spr, _i*_ss,0,_ss,_sh, _ox+_i*_sd, _oy+_yo, _sd+1, _dh);
+    }
+    // damage flash — fish turns red when hit
     if (f.hitFlash > 0){
-      ctx.globalAlpha = Math.min(0.7, f.hitFlash*5);
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath(); ctx.ellipse(0, 0, s*1.35, s*0.9, 0, 0, 6.28); ctx.fill();
+      ctx.globalAlpha = Math.min(0.85, f.hitFlash*7);
+      ctx.fillStyle = '#ff2222';
+      ctx.beginPath(); ctx.ellipse(0, 0, s*1.4, s*0.92, 0, 0, 6.28); ctx.fill();
       ctx.globalAlpha = 1;
     }
     // hp bar for tougher fish
@@ -932,7 +940,7 @@ function drawFish(f){
   // hit flash overlay
   if (f.hitFlash > 0){
     ctx.beginPath(); ctx.ellipse(0,0,s*1.1,s*0.66,0,0,6.28);
-    ctx.fillStyle = `rgba(255,255,255,${f.hitFlash*5})`; ctx.fill();
+    ctx.fillStyle = `rgba(255,60,60,${f.hitFlash*5})`; ctx.fill();
   }
 
   ctx.shadowBlur = 0;
