@@ -155,7 +155,7 @@ sceneImg.src = 'assets/scene.png';
 const cannonImg = new Image(); let cannonReady = false;
 cannonImg.onload = () => { cannonReady = true; };
 cannonImg.src = 'assets/cannon.png';
-const megAnim = new Image(); let megAnimReady=false; megAnim.onload=()=>{ megAnimReady=true; }; megAnim.src='assets/megalodon-anim.png';
+const megAnim = new Image(); let megAnimReady=false; megAnim.onload=()=>{ megAnimReady=true; }; megAnim.src='assets/megalodon-anim.png?v=2';
 
 // ===== CANNON SKINS =====
 const SKINS = [
