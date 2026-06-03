@@ -54,6 +54,7 @@ const FISH_TYPES = {
   angler : { hp:6,  value:70,  size:30, speed:110, color:'#ff7a59', glow:'#ffd2b0', weight:9,  coins:11, hunter:true },
   golden : { hp:9,  value:140, size:30, speed:160, color:'#ffce63', glow:'#fff1c2', weight:4,  coins:24, shiny:true },
   levia  : { hp:22, value:320, size:64, speed:55,  color:'#ffb13d', glow:'#ffe7a8', weight:1,  coins:60, boss:true },
+  jackpot: { hp:24, value:1000,size:74, speed:80,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:200, jackpot:true },
 };
 const TYPE_KEYS = Object.keys(FISH_TYPES);
 const TOTAL_WEIGHT = TYPE_KEYS.reduce((s,k)=>s+FISH_TYPES[k].weight,0);
@@ -93,6 +94,7 @@ let coinsFx = [];
 let waves = [];
 let zoomPunch = 0, zx = 0, zy = 0;
 let powerups = [], puTimer = 7;
+let jackpotTimer = 32;
 let freezeT = 0, doubleT = 0, multiT = 0;
 const POWERUPS = {
   freeze: { icon:'F',  color:'#7fd4ff', label:'FREEZE' },
@@ -201,6 +203,7 @@ function sfxCoin(){ blip({freq:1300,type:'sine',dur:0.12,vol:0.08,slideTo:2050})
 function sfxCombo(n){ const f=480+n*80; blip({freq:f,type:'sine',dur:0.15,vol:0.12,slideTo:f*1.5}); }
 function sfxDive(){ noiseBurst({dur:1.0,vol:0.4,freq:700,type:'lowpass',q:0.7}); blip({freq:420,type:'sine',dur:0.9,vol:0.13,slideTo:70}); }
 function sfxPower(){ blip({freq:520,type:'sine',dur:0.5,vol:0.16,slideTo:1300}); blip({freq:800,type:'triangle',dur:0.4,vol:0.1,slideTo:1700}); }
+function sfxJackpot(){ [523,659,784,1046,1318].forEach((fr,i)=>setTimeout(()=>blip({freq:fr,type:'sine',dur:0.45,vol:0.16,slideTo:fr*1.4}), i*90)); noiseBurst({dur:0.5,vol:0.18,freq:1200,type:'highpass'}); }
 function toggleMute(){
   muted = !muted;
   if (masterGain) masterGain.gain.value = muted ? 0 : 0.9;
@@ -411,6 +414,7 @@ function killFish(f){
   spawnCoinFx(f.x, f.y, Math.min(f.coins, f.boss?16:6));
   waves.push({x:f.x,y:f.y,r:f.size*0.4,max:f.size*3 + f.value*2.2,life:big?.6:.42,maxLife:big?.6:.42});
   if (f.boss){ zoomPunch = 0.28; zx = f.x; zy = f.y; }
+  if (f.jackpot) jackpotWin();
 
   fish.splice(fish.indexOf(f), 1);
   updateHUD();
@@ -442,6 +446,24 @@ function updateFx(dt){
 function coinPop(){
   const el = document.getElementById('hud-credits');
   if (el){ el.classList.remove('coin-pop'); void el.offsetWidth; el.classList.add('coin-pop'); }
+}
+
+function spawnJackpot(){
+  const t = FISH_TYPES.jackpot;
+  const fromLeft = srand() < 0.5;
+  const y = srange(H*0.2, H*0.55);
+  fish.push({ key:'jackpot', ...t, maxHp:t.hp, jackpot:true,
+    x: fromLeft?-t.size*2:W+t.size*2, y, baseY:y, vx:(fromLeft?1:-1)*t.speed,
+    amp:srange(14,28), freq:srange(0.4,0.8), phase:srand()*6.28, t:0, dir:fromLeft?1:-1, wig:srand()*6.28, hitFlash:0 });
+}
+function jackpotWin(){
+  flash = 0.85; flashColor = '#ffce63'; shake = 16; hitStop = 0.12;
+  spawnCoinFx(W/2, H*0.4, 40);
+  for (let i=0;i<70;i++){ const a=Math.random()*6.28, sp=rand(80,520);
+    particles.push({ x:W/2, y:H*0.4, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, r:rand(2,5), life:rand(.7,1.5), max:1.5, c: Math.random()<0.5?'#ffce63':'#fff1c2', grav:200 }); }
+  rings.push({ x:W/2, y:H*0.4, r:20, max:Math.max(W,H), life:.7, c:'#ffce63' });
+  pops.push({ x:W/2, y:H*0.42, txt:'JACKPOT!', life:2.2, max:2.2, c:'#ffce63', big:true, huge:true });
+  sfxJackpot();
 }
 
 function spawnPowerup(){
@@ -614,6 +636,8 @@ function update(dt){
   for (const pu of powerups){ pu.t += dt; pu.x += pu.vx*dt; pu.y = pu.baseY + Math.sin(pu.t*1.5 + pu.phase)*14;
     if (pu.x < -50 || pu.x > W+50) pu._gone = true; }
   powerups = powerups.filter(pu => !pu._gone);
+  jackpotTimer -= dt;
+  if (jackpotTimer <= 0){ spawnJackpot(); jackpotTimer = srange(40, 70); }
   if (freezeT>0) freezeT -= dt; if (doubleT>0) doubleT -= dt; if (multiT>0) multiT -= dt;
 
   decayCombo(dt);
@@ -774,7 +798,7 @@ function drawFish(f){
   const s = f.size;
 
   // ── sprite hook (ludo.ai): use bitmap if provided ──
-  const spr = FISH_TYPES[f.key] && FISH_TYPES[f.key].sprite;
+  const spr = (FISH_TYPES[f.key] && FISH_TYPES[f.key].sprite) || (f.jackpot && FISH_TYPES.golden ? FISH_TYPES.golden.sprite : null);
   if (spr && spr.complete){
     ctx.shadowColor = f.glow; ctx.shadowBlur = f.shiny||f.boss ? 26 : 16;
     ctx.drawImage(spr, -s*1.9, -s*1.2, s*3.8, s*2.4);
@@ -967,6 +991,18 @@ function render(time){
 
   fish.forEach(drawFish);
 
+  for (const f of fish){ if (!f.jackpot) continue;
+    const tt = performance.now()*0.004;
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    ctx.globalAlpha = 0.4+0.3*Math.sin(tt); ctx.strokeStyle='#ffce63'; ctx.lineWidth=3; ctx.shadowColor='#ffce63'; ctx.shadowBlur=20;
+    ctx.beginPath(); ctx.arc(f.x,f.y,f.size*1.5+Math.sin(tt)*6,0,6.28); ctx.stroke();
+    for (let k=0;k<6;k++){ const a=tt+k*1.05, rx=f.x+Math.cos(a)*f.size*1.7, ry=f.y+Math.sin(a)*f.size*1.7;
+      ctx.globalAlpha=0.85; ctx.fillStyle='#fff1c2'; ctx.beginPath(); ctx.arc(rx,ry,2.6,0,6.28); ctx.fill(); }
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha=0.95; ctx.fillStyle='#ffce63'; ctx.font='800 15px Segoe UI,sans-serif';
+    ctx.textAlign='center'; ctx.shadowColor='#ffce63'; ctx.shadowBlur=10; ctx.fillText('JACKPOT', f.x, f.y - f.size*1.75); ctx.restore();
+  }
+
   for (const pu of powerups){
     const cfg = POWERUPS[pu.key];
     ctx.save(); ctx.shadowColor = cfg.color; ctx.shadowBlur = 18;
@@ -1010,7 +1046,7 @@ function render(time){
   for (const p of pops){
     ctx.globalAlpha = clamp(p.life/p.max,0,1);
     ctx.fillStyle = p.c; ctx.textAlign='center';
-    ctx.font = `900 ${p.big?30:20}px ${'Segoe UI,system-ui,sans-serif'}`;
+    ctx.font = `900 ${p.huge?64:p.big?30:20}px ${'Segoe UI,system-ui,sans-serif'}`;
     ctx.shadowColor=p.c; ctx.shadowBlur=12;
     ctx.fillText(p.txt, p.x, p.y);
     ctx.shadowBlur=0;
