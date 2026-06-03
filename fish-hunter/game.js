@@ -58,7 +58,7 @@ const FISH_TYPES = {
   seacat : { hp:12, value:100, size:42, speed:95,  color:'#9aa6b0', glow:'#d7e0e8', weight:6,  coins:18 },
   shark  : { hp:18, value:200, size:58, speed:135, color:'#7f93a3', glow:'#cfe0ee', weight:3,  coins:35 },
   whale  : { hp:32, value:450, size:95, speed:50,  color:'#3a78d0', glow:'#a9d0ff', weight:1,  coins:80 },
-  megalodon:{ hp:50, value:750, size:115, speed:70, color:'#5a6b7a', glow:'#cfe0ee', weight:0, coins:140, boss:true },
+  megalodon:{ hp:70, value:900, size:140, speed:40, color:'#5a6b7a', glow:'#cfe0ee', weight:0, coins:200, boss:true },
   jackpot: { hp:24, value:1000,size:74, speed:80,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:200, jackpot:true },
 };
 const TYPE_KEYS = Object.keys(FISH_TYPES);
@@ -545,9 +545,12 @@ function coinPop(){
 
 function spawnMegalodon(){
   const t = FISH_TYPES.megalodon;
+  const sz = clamp(Math.min(W,H)*0.15, 110, 220);   // ~1/4 of the screen
   const fromLeft = srand()<0.5;
-  const y = srange(H*0.3, H*0.62);
-  fish.push({ key:'megalodon', ...t, maxHp:t.hp, x: fromLeft?-t.size*2:W+t.size*2, y, vx:(fromLeft?1:-1)*t.speed, vy:0, baseY:y, freq:srange(0.3,0.6), phase:srand()*6.28, t:0, wig:srand()*6.28, hitFlash:0 });
+  const y = srange(H*0.32, H*0.6);
+  fish.push({ key:'megalodon', ...t, maxHp:t.hp, size:sz,
+    x: fromLeft?-sz*2.2:W+sz*2.2, y, vx:(fromLeft?1:-1)*t.speed, vy:0, baseY:y,
+    freq:srange(0.25,0.45), phase:srand()*6.28, t:0, wig:srand()*6.28, hitFlash:0 });
   flash = 0.4; flashColor = '#ff3030'; shake = 14;
 }
 function spawnJackpot(){
