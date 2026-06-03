@@ -677,6 +677,16 @@ function celebrate(){ const card=document.querySelector('#overlay-end .ov-card')
   for(let i=0;i<44;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=(Math.random()*100)+'%'; c.style.background=cols[(Math.random()*cols.length)|0]; c.style.animationDuration=(1.4+Math.random()*1.6)+'s'; c.style.animationDelay=(Math.random()*0.5)+'s'; wrap.appendChild(c); }
   setTimeout(()=>{ if(wrap) wrap.innerHTML=''; }, 4000); }
 
+function renderCredits(){
+  const el=document.getElementById('credits-stats'); if(!el) return;
+  el.innerHTML =
+    '<div class="st-row"><span>Player</span><b>'+NICK+'</b></div>'+
+    '<div class="st-row"><span>Best score</span><b>'+formatNum(ls(K.best))+'</b></div>'+
+    '<div class="st-row"><span>Games played</span><b>'+ls(K.games)+'</b></div>'+
+    '<div class="st-row"><span>Credits won</span><b>'+formatNum(ls(K.coins))+'</b></div>'+
+    '<div class="st-row"><span>Best combo</span><b>x'+(ls(K.bigCombo)||1)+'</b></div>';
+}
+
 function renderMenu(){
   if (logoImg.complete && logoImg.naturalWidth > 0){
     const li = document.getElementById('menu-logo-img');
@@ -1450,11 +1460,13 @@ document.querySelectorAll('#ov-mode .mode-btn').forEach(btn=>{
     btn.classList.add('active'); mode = btn.dataset.mode;
   };
 });
-document.getElementById('btn-start').onclick = startGame;
+document.getElementById('btn-start').onclick = ()=>{ mode='tournament'; startGame(); };
 const _sm = document.getElementById('soon-msg');
 function showSoon(w){ if(_sm){ _sm.textContent = w + ' - coming soon'; _sm.classList.add('show'); clearTimeout(showSoon._t); showSoon._t=setTimeout(()=>_sm.classList.remove('show'),1900); } }
 { const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>showSoon('Multiplayer'); }
-{ const b=document.getElementById('btn-shop'); if(b) b.onclick=()=>showSoon('Shop'); }
+{ const b=document.getElementById('btn-demo'); if(b) b.onclick=()=>{ mode='free'; startGame(); }; }
+{ const b=document.getElementById('btn-credits'); if(b) b.onclick=()=>{ renderCredits(); const o=document.getElementById('overlay-credits'); if(o) o.classList.remove('hidden'); }; }
+{ const b=document.getElementById('credits-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-credits'); if(o) o.classList.add('hidden'); }; }
 document.getElementById('btn-again').onclick = () => { startGame(); };
 document.getElementById('exit-btn').onclick = exitToMenu;
 document.getElementById('mute-btn').onclick = toggleMute;

@@ -368,3 +368,14 @@ body.playing #weapon-bar{display:flex;}
 .shop-btn{width:100%;padding:7px;border:none;border-radius:8px;cursor:pointer;font-size:10px;font-weight:800;letter-spacing:.5px;color:#03161a;background:linear-gradient(135deg,var(--teal),#7ff0dd);}
 .shop-btn:disabled{opacity:.75;cursor:default;background:rgba(8,30,46,.7);color:var(--ink-dim);}
 .shop-btn.locked{color:var(--ink-dim);}
+
+/* lobby supreme */
+.lobby2 .menu-logo-img2{max-width:min(62vw,360px);}
+.lobby2 .lobby2-logotext{font-size:clamp(38px,8vw,76px);text-shadow:0 0 50px rgba(40,224,200,.55),0 0 110px rgba(40,224,200,.3);}
+.menu-cta.cta-play{font-size:21px;padding:18px;letter-spacing:4px;box-shadow:0 10px 34px rgba(40,224,200,.55);animation:playPulse 2.6s ease-in-out infinite;}
+@keyframes playPulse{0%,100%{box-shadow:0 10px 30px rgba(40,224,200,.45);}50%{box-shadow:0 12px 46px rgba(40,224,200,.8);}}
+.menu-cta.cta-play:hover{transform:translateY(-3px);}
+.weekly-lb{max-height:330px;}
+.lobby2-right{padding:16px;}
+.credits-stats{margin:8px 0 18px;text-align:left;}
+.credits-stats .st-row{font-size:14px;padding:8px 4px;border-bottom:1px solid rgba(70,200,210,.08);}
