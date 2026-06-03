@@ -318,25 +318,23 @@ function spawnFish(forceSchool){
   const frac = mode==='tournament' ? 1-(timeLeft/ROUND_TIME) : Math.min(elapsed/90,1);
   const key  = pickType(frac);
   const t    = FISH_TYPES[key];
-  const fromLeft = srand() < 0.5;
-  const y = srange(H*0.12, H*0.78);
-  const baseVx = (fromLeft?1:-1) * t.speed * srange(0.85,1.15);
-  const f = {
-    key, ...t, maxHp:t.hp,
-    x: fromLeft ? -t.size*2 : W + t.size*2,
-    y, vx: baseVx,
-    amp: srange(8, 36), freq: srange(0.6,1.6), phase: srand()*6.28,
-    baseY: y, t: 0, dir: fromLeft?1:-1, wig: srand()*6.28,
-    hitFlash: 0,
-  };
+  const m = t.size*2.2, edge = (srand()*4)|0;
+  let x,y;
+  if (edge===0){ x=-m; y=srange(H*0.05,H*0.95); }
+  else if (edge===1){ x=W+m; y=srange(H*0.05,H*0.95); }
+  else if (edge===2){ x=srange(W*0.05,W*0.95); y=-m; }
+  else { x=srange(W*0.05,W*0.95); y=H+m; }
+  const aimX=srange(W*0.2,W*0.8), aimY=srange(H*0.2,H*0.8);
+  let dx=aimX-x, dy=aimY-y; const len=Math.hypot(dx,dy)||1;
+  const sp = t.speed * srange(0.85,1.15);
+  const vx=dx/len*sp, vy=dy/len*sp;
+  const f = { key, ...t, maxHp:t.hp, x, y, vx, vy, baseY:y,
+    freq:srange(0.6,1.6), phase:srand()*6.28, t:0, wig:srand()*6.28, hitFlash:0 };
   fish.push(f);
-  // schools of minnows / darters
   if (forceSchool && (key==='minnow'||key==='darter')){
-    const n = key==='minnow'? 5 : 3;
+    const n = key==='minnow'?5:3, ux=vx/sp, uy=vy/sp;
     for (let i=1;i<=n;i++){
-      fish.push({ ...f, x:f.x - f.dir*i*t.size*2.4,
-        baseY: clamp(y + srange(-30,30), H*0.1, H*0.8),
-        phase: srand()*6.28 });
+      fish.push({ ...f, x:x-ux*i*t.size*2.4, y:y-uy*i*t.size*2.4, phase:srand()*6.28, wig:srand()*6.28 });
     }
   }
 }
@@ -369,10 +367,9 @@ function hurtFish(f, dmg, bx, by){
   f.hp -= dmg; f.hitFlash = 0.18;
   stats.hits++;
   sfxHit();
-  for (let i=0;i<5;i++){
-    particles.push({ x:bx, y:by, vx:rand(-90,90), vy:rand(-90,90),
-      r:rand(1,2.5), life:.3, max:.3, c:f.glow });
-  }
+  for (let i=0;i<9;i++){ const a=Math.random()*6.28, sp=rand(70,240);
+    particles.push({ x:bx, y:by, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, r:rand(1,2.8), life:rand(.18,.38), max:.38, c: Math.random()<0.45?'#ffffff':f.glow }); }
+  particles.push({ x:bx, y:by, vx:0, vy:0, r:f.size*0.45, life:.1, max:.1, c:'#ffffff' });
   if (f.hp <= 0) killFish(f);
 }
 
@@ -417,6 +414,8 @@ function killFish(f){
   shake = Math.min(shake + (f.boss?18:f.value>=70?11:f.value>=30?7:3), 24);
   if (big){ flash = f.boss?0.55:0.38; flashColor = f.glow; hitStop = f.boss?0.09:0.05; }
   spawnCoinFx(f.x, f.y, Math.min(f.coins, f.boss?16:6));
+  for (let i=0;i<6;i++){ const a=Math.random()*6.28, dd=rand(10,f.size*1.8);
+    particles.push({ x:f.x+Math.cos(a)*dd, y:f.y+Math.sin(a)*dd, vx:0,vy:0, r:rand(2,4), life:rand(.3,.6), max:.6, c:'#fff7d0', star:true }); }
   waves.push({x:f.x,y:f.y,r:f.size*0.4,max:f.size*3 + f.value*2.2,life:big?.6:.42,maxLife:big?.6:.42});
   if (f.boss){ zoomPunch = 0.28; zx = f.x; zy = f.y; }
   if (f.jackpot) jackpotWin();
@@ -668,14 +667,15 @@ function update(dt){
 
   decayCombo(dt);
 
-  // fish motion
+  // fish motion -- straight-line travel in any direction
   const tscale = freezeT > 0 ? 0.12 : 1;
   for (const f of fish){
-    f.t += dt*tscale; f.wig += dt*8;
+    f.t += dt*tscale; f.wig += dt*8*tscale;
     f.x += f.vx * dt * tscale;
-    f.y = f.baseY + Math.sin(f.t*f.freq*3 + f.phase) * f.amp;
+    f.y += (f.vy||0) * dt * tscale;
     if (f.hitFlash > 0) f.hitFlash -= dt;
-    if (f.x < -f.size*3 || f.x > W + f.size*3) f._gone = true;
+    const mg = f.size*3;
+    if (f.x<-mg || f.x>W+mg || f.y<-mg || f.y>H+mg) f._gone = true;
   }
   fish = fish.filter(f => !f._gone);
 
@@ -874,10 +874,15 @@ function drawBackground(time){
   ctx.restore();
 }
 
+function drawStar(x,y,r){ ctx.save(); ctx.translate(x,y); ctx.beginPath();
+  for (let i=0;i<4;i++){ const a=i*Math.PI/2; ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r); ctx.lineTo(Math.cos(a+0.785)*r*0.28,Math.sin(a+0.785)*r*0.28); }
+  ctx.closePath(); ctx.fill(); ctx.restore(); }
+
 function drawFish(f){
   ctx.save();
   ctx.translate(f.x, f.y);
-  if (f.dir < 0) ctx.scale(-1,1);            // face travel direction
+  if (f.vy !== undefined && (f.vx||f.vy)){ const _ang=Math.atan2(f.vy,f.vx||0.0001); ctx.rotate(_ang); if (Math.abs(_ang)>Math.PI/2) ctx.scale(1,-1); }
+  else if (f.dir < 0) ctx.scale(-1,1);
   const s = f.size;
 
   // ── sprite hook (ludo.ai): use bitmap if provided ──
@@ -890,7 +895,7 @@ function drawFish(f){
     const _N=9, _sw=spr.naturalWidth||spr.width, _sh=spr.naturalHeight||spr.height;
     const _ss=_sw/_N, _sd=_dw/_N, _sp=f.wig;
     for (let _i=0;_i<_N;_i++){
-      const _amp=(1-_i/(_N-1))*s*0.15;
+      const _amp=(1-_i/(_N-1))*s*0.24;
       const _yo=Math.sin(_sp*1.6 + _i*0.7)*_amp;
       ctx.drawImage(spr, _i*_ss,0,_ss,_sh, _ox+_i*_sd, _oy+_yo, _sd+1, _dh);
     }
@@ -1141,7 +1146,8 @@ function render(time){
   for (const p of particles){
     ctx.globalAlpha = clamp(p.life/p.max,0,1);
     ctx.fillStyle = p.c;
-    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.28); ctx.fill();
+    if (p.star){ ctx.shadowColor=p.c; ctx.shadowBlur=8; drawStar(p.x,p.y,p.r*2.4); ctx.shadowBlur=0; }
+    else { ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.28); ctx.fill(); }
   }
   ctx.restore();
 
@@ -1179,10 +1185,15 @@ function render(time){
     ctx.fillRect(0,0,W,H); ctx.globalAlpha = 1;
   }
   if (coinsFx.length){
-    ctx.save(); ctx.globalCompositeOperation='lighter';
+    ctx.save();
     for (const c of coinsFx){ if (c.delay>0) continue;
-      ctx.shadowColor='#ffce63'; ctx.shadowBlur=10; ctx.fillStyle='#ffd76b';
-      ctx.beginPath(); ctx.arc(c.x,c.y,3.2,0,6.28); ctx.fill();
+      const sx = Math.abs(Math.cos((c.t||0)*9 + c.x*0.05));
+      ctx.save(); ctx.translate(c.x,c.y); ctx.scale(0.35+sx*0.65,1);
+      ctx.shadowColor='#ffb020'; ctx.shadowBlur=8;
+      ctx.fillStyle='#ffce63'; ctx.beginPath(); ctx.arc(0,0,5.5,0,6.28); ctx.fill();
+      ctx.shadowBlur=0; ctx.strokeStyle='#b8801a'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(0,0,5.5,0,6.28); ctx.stroke();
+      ctx.fillStyle='#fff2bf'; ctx.beginPath(); ctx.arc(-1.4,-1.4,1.8,0,6.28); ctx.fill();
+      ctx.restore();
     }
     ctx.restore();
   }
