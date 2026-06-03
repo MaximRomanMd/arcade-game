@@ -121,8 +121,9 @@ const LOAD_MSGS = [
 ];
 let cannonSway = 0;              // gentle barrel motion on menu/splash
 let diveT = 0;                   // dive transition timer
-const DIVE_DUR = 1.25;           // seconds of the plunge
-let diveStreaks = [];            // fast rising bubbles during the dive
+const DIVE_DUR = 1.9;           // seconds of the plunge
+let diveStreaks = [];
+let descent = 0;            // fast rising bubbles during the dive
 
 // optional ludo.ai splash logo (assets/logo.png) — auto-used if present
 const logoImg = new Image();
@@ -214,6 +215,8 @@ function toggleMute(){
 const rand = (a,b) => a + Math.random()*(b-a);
 const clamp = (v,a,b) => v<a?a:v>b?b:v;
 const formatNum = n => Number(n).toLocaleString('en-US');
+function _lerp(a,b,t){return a+(b-a)*t;}
+function _mix(c1,c2,t){return 'rgb('+Math.round(_lerp(c1[0],c2[0],t))+','+Math.round(_lerp(c1[1],c2[1],t))+','+Math.round(_lerp(c1[2],c2[2],t))+')';}
 
 // seeded RNG (mulberry32) — same seed => identical fish for everyone (FAIR rounds)
 let _rngS = 1;
@@ -563,6 +566,7 @@ function startDive(){
 }
 function updateDive(dt){
   diveT += dt;
+  { const p = clamp(diveT/DIVE_DUR,0,1); descent = p*p; }
   updateAmbient(dt);
   for (const s of diveStreaks){
     s.y -= s.spd*dt; s.x += s.wob*dt;
@@ -614,7 +618,7 @@ function renderMenu(){
 }
 
 function revealMenu(){
-  phase = 'menu'; shake = 0; flash = 0; zoomPunch = 0;
+  phase = 'menu'; shake = 0; flash = 0; zoomPunch = 0; descent = 1;
   const boot = document.getElementById('overlay-boot');
   boot.classList.add('fade');
   diveStreaks = [];
@@ -721,9 +725,9 @@ function update(dt){
 // ════════════════════════════════════════════════════════════════
 function drawBackground(time){
   const ts = time*0.001;
+  const d = descent;
 
-  // optional ludo.ai scene art (assets/scene.png) drawn 'cover'
-  if (sceneReady){
+  if (sceneReady && d > 0.85){
     const ir = sceneImg.width/sceneImg.height, cr = W/H;
     let dw,dh; if (cr>ir){ dw=W; dh=W/ir; } else { dh=H; dw=H*ir; }
     ctx.drawImage(sceneImg, (W-dw)/2, (H-dh)/2, dw, dh);
@@ -731,37 +735,48 @@ function drawBackground(time){
     ov.addColorStop(0,'rgba(4,18,31,.35)'); ov.addColorStop(1,'rgba(1,7,13,.78)');
     ctx.fillStyle = ov; ctx.fillRect(0,0,W,H);
   } else {
-    // depth gradient
     const g = ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0,'#0a3a55'); g.addColorStop(0.4,'#06182a');
-    g.addColorStop(0.78,'#04101c'); g.addColorStop(1,'#010609');
+    g.addColorStop(0,   _mix([56,188,216],[10,58,85], d));
+    g.addColorStop(0.5, _mix([26,140,170],[6,24,42],  d));
+    g.addColorStop(1,   _mix([8,60,86],  [1,7,13],   d));
     ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-    // surface glow
-    const sg = ctx.createLinearGradient(0,0,0,H*0.3);
-    sg.addColorStop(0,'rgba(90,230,225,0.14)'); sg.addColorStop(1,'rgba(90,230,225,0)');
-    ctx.fillStyle = sg; ctx.fillRect(0,0,W,H*0.3);
   }
 
-  // god rays from the surface
-  ctx.save();
-  ctx.globalCompositeOperation = 'lighter';
+  const surfaceY = H*0.18 - d*H*1.7;
+  if (surfaceY > -180){
+    const fade = Math.max(0, 1 - d*1.3);
+    const sg = ctx.createLinearGradient(0, surfaceY-220, 0, surfaceY+30);
+    sg.addColorStop(0, `rgba(195,247,255,${0.6*fade})`);
+    sg.addColorStop(1, 'rgba(150,230,245,0)');
+    ctx.fillStyle = sg; ctx.fillRect(0, surfaceY-220, W, 250);
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle = `rgba(212,249,255,${0.75*fade})`; ctx.lineWidth=3;
+    ctx.beginPath();
+    for (let x=0;x<=W;x+=18){ const yy=surfaceY+Math.sin(x*0.018+ts*1.6)*7; x===0?ctx.moveTo(x,yy):ctx.lineTo(x,yy); }
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,255,${0.4*fade})`; ctx.lineWidth=1.5;
+    ctx.beginPath();
+    for (let x=0;x<=W;x+=18){ const yy=surfaceY+9+Math.sin(x*0.02+ts*1.3+1)*5; x===0?ctx.moveTo(x,yy):ctx.lineTo(x,yy); }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  const rayBoost = 0.5 + (1-d)*1.2;
   const rays = 6;
   for (let i=0;i<rays;i++){
     const rx = (W/(rays-1))*i + Math.sin(ts*0.3 + i*1.7)*70;
     const wob = Math.sin(ts*0.5 + i)*0.25 + 0.75;
     const grad = ctx.createLinearGradient(rx, 0, rx+120, H);
-    grad.addColorStop(0,`rgba(120,235,225,${0.09*wob})`);
-    grad.addColorStop(0.6,`rgba(80,200,210,${0.03*wob})`);
+    grad.addColorStop(0,`rgba(150,240,235,${0.10*wob*rayBoost})`);
+    grad.addColorStop(0.6,`rgba(90,210,220,${0.03*wob*rayBoost})`);
     grad.addColorStop(1,'rgba(80,220,220,0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.moveTo(rx-46,0); ctx.lineTo(rx+46,0);
-    ctx.lineTo(rx+170,H); ctx.lineTo(rx-20,H); ctx.closePath();
-    ctx.fill();
+    ctx.moveTo(rx-46,0); ctx.lineTo(rx+46,0); ctx.lineTo(rx+170,H); ctx.lineTo(rx-20,H); ctx.closePath(); ctx.fill();
   }
   ctx.restore();
 
-  // drifting particulate (stateless, derived from time)
   ctx.save(); ctx.globalCompositeOperation='lighter';
   for (let i=0;i<60;i++){
     const seed = i*12.9898;
@@ -773,9 +788,9 @@ function drawBackground(time){
   }
   ctx.restore();
 
-  // seabed + far parallax ridge + livelier kelp
-  if (!sceneReady){
-    ctx.save();
+  if (!sceneReady && d > 0.5){
+    const ka = Math.min(1,(d-0.5)/0.5);
+    ctx.save(); ctx.globalAlpha = ka;
     ctx.fillStyle = 'rgba(3,16,26,0.7)';
     ctx.beginPath(); ctx.moveTo(0,H);
     for (let x=0;x<=W;x+=60) ctx.lineTo(x, H-72 - Math.sin(x*0.006 + ts*0.12)*26);
@@ -799,7 +814,6 @@ function drawBackground(time){
     ctx.restore();
   }
 
-  // bubbles
   ctx.save();
   for (const bu of bubbles){
     ctx.beginPath(); ctx.arc(bu.x,bu.y,bu.r,0,6.28);
@@ -1157,6 +1171,7 @@ function startGame(){
   matchSeed = mode==='tournament' ? dailySeed() : ((Math.random()*1e9)|0);
   setSeed(matchSeed);
   for (let i=0;i<5;i++) spawnFish(false);
+  descent = 1;
   phase = 'playing';
   running = true;
   document.body.classList.add('playing');
