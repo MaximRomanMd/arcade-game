@@ -889,16 +889,15 @@ function drawFish(f){
   const spr = (FISH_TYPES[f.key] && FISH_TYPES[f.key].sprite) || (f.jackpot && FISH_TYPES.golden ? FISH_TYPES.golden.sprite : null);
   if (spr && spr.complete){
     const _ox=-s*1.9, _oy=-s*1.2, _dw=s*3.8, _dh=s*2.4;
-    ctx.shadowColor = f.glow; ctx.shadowBlur = f.shiny||f.boss ? 26 : 16;
-    ctx.globalAlpha = 0.4; ctx.drawImage(spr, _ox, _oy, _dw, _dh); ctx.globalAlpha = 1;
-    ctx.shadowBlur = 0;
     const _N=9, _sw=spr.naturalWidth||spr.width, _sh=spr.naturalHeight||spr.height;
     const _ss=_sw/_N, _sd=_dw/_N, _sp=f.wig;
+    ctx.shadowColor = f.glow; ctx.shadowBlur = f.shiny||f.boss ? 20 : 13;
     for (let _i=0;_i<_N;_i++){
       const _amp=(1-_i/(_N-1))*s*0.24;
       const _yo=Math.sin(_sp*1.6 + _i*0.7)*_amp;
-      ctx.drawImage(spr, _i*_ss,0,_ss,_sh, _ox+_i*_sd, _oy+_yo, _sd+1, _dh);
+      ctx.drawImage(spr, _i*_ss,0,_ss,_sh, _ox+_i*_sd-0.5, _oy+_yo, _sd+1.5, _dh);
     }
+    ctx.shadowBlur = 0;
     // damage flash — fish turns red when hit
     if (f.hitFlash > 0){
       ctx.globalAlpha = Math.min(0.85, f.hitFlash*7);
