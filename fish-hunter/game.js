@@ -424,22 +424,52 @@ function killFish(f){
   updateHUD();
 }
 
+const coinImg = new Image(); let coinReady=false;
+coinImg.onload=()=>{ coinReady=true; }; coinImg.src='assets/coin.png';
+function drawCoin(x,y,r,spin){
+  const sx = Math.max(0.14, Math.abs(Math.cos(spin)));
+  ctx.save(); ctx.translate(x,y); ctx.scale(sx,1);
+  ctx.shadowColor='#ffb020'; ctx.shadowBlur=12;
+  if (coinReady){ ctx.drawImage(coinImg, -r, -r, r*2, r*2); ctx.restore(); return; }
+  const g=ctx.createRadialGradient(-r*0.3,-r*0.3,r*0.15,0,0,r);
+  g.addColorStop(0,'#fff0bf'); g.addColorStop(0.5,'#ffce63'); g.addColorStop(1,'#dd9418');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,r,0,6.28); ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='#b8801a'; ctx.lineWidth=r*0.13; ctx.beginPath(); ctx.arc(0,0,r*0.9,0,6.28); ctx.stroke();
+  ctx.fillStyle='#9a6b12';
+  ctx.beginPath(); ctx.ellipse(r*0.06,0,r*0.4,r*0.22,0,0,6.28); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-r*0.32,0); ctx.lineTo(-r*0.6,-r*0.2); ctx.lineTo(-r*0.6,r*0.2); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(r*0.08,-r*0.16); ctx.quadraticCurveTo(r*0.28,-r*0.42,r*0.36,-r*0.14); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#5a3d08'; ctx.beginPath(); ctx.arc(r*0.32,-r*0.05,r*0.05,0,6.28); ctx.fill();
+  ctx.restore();
+}
 function spawnCoinFx(x,y,n){
-  const el = document.getElementById('hud-credits');
-  let tx = W*0.13, ty = 46;
-  if (el){ const r = el.getBoundingClientRect(); tx = r.left + r.width/2; ty = r.top + r.height/2; }
   for (let i=0;i<n;i++)
-    coinsFx.push({ x:x+rand(-12,12), y:y+rand(-12,12), tx, ty, vx:rand(-50,50), vy:rand(-140,-40), t:0, delay:i*0.035 });
+    coinsFx.push({ x:x+rand(-16,16), y:y+rand(-16,16), vx:rand(-150,150), vy:rand(-340,-160),
+      state:'fall', t:0, spin:Math.random()*6.28, spinV:rand(6,11)*(Math.random()<0.5?1:-1),
+      r:rand(15,20), groundY:H-rand(24,90), delay:i*0.04, tx:0, ty:0 });
 }
 function updateFx(dt){
   updateBgLife(dt);
   for (const c of coinsFx){
     if (c.delay>0){ c.delay-=dt; continue; }
-    c.t += dt;
-    const pull = Math.min(1, dt*(4 + c.t*9));
-    c.x += (c.tx-c.x)*pull + c.vx*dt; c.y += (c.ty-c.y)*pull + c.vy*dt;
-    c.vx *= 0.9; c.vy *= 0.9;
-    if (Math.hypot(c.tx-c.x, c.ty-c.y) < 16){ c._done = true; coinPop(); }
+    c.t += dt; c.spin += c.spinV*dt;
+    if (c.state==='fall'){
+      c.vy += 1100*dt; c.x += c.vx*dt; c.y += c.vy*dt; c.vx *= 0.985;
+      if (c.y >= c.groundY){ c.y=c.groundY; c.vy*=-0.32; c.vx*=0.55; c.spinV*=0.72;
+        if (Math.abs(c.vy)<70){ c.state='rest'; c.t=0; } }
+    } else if (c.state==='rest'){
+      if (c.t > 0.45){
+        const el=document.getElementById('hud-credits');
+        if (el){ const r=el.getBoundingClientRect(); c.tx=r.left+r.width/2; c.ty=r.top+r.height/2; }
+        else { c.tx=W*0.13; c.ty=46; }
+        c.state='fly'; c.t=0;
+      }
+    } else {
+      const pull=Math.min(1, dt*(3.5 + c.t*11));
+      c.x += (c.tx-c.x)*pull; c.y += (c.ty-c.y)*pull; c.r *= (1 - dt*1.1);
+      if (Math.hypot(c.tx-c.x, c.ty-c.y) < 22 || c.r < 5){ c._done=true; coinPop(); }
+    }
   }
   coinsFx = coinsFx.filter(c => !c._done);
   for (const w of waves) w.life -= dt;
@@ -1185,17 +1215,7 @@ function render(time){
     ctx.fillRect(0,0,W,H); ctx.globalAlpha = 1;
   }
   if (coinsFx.length){
-    ctx.save();
-    for (const c of coinsFx){ if (c.delay>0) continue;
-      const sx = Math.abs(Math.cos((c.t||0)*9 + c.x*0.05));
-      ctx.save(); ctx.translate(c.x,c.y); ctx.scale(0.35+sx*0.65,1);
-      ctx.shadowColor='#ffb020'; ctx.shadowBlur=8;
-      ctx.fillStyle='#ffce63'; ctx.beginPath(); ctx.arc(0,0,5.5,0,6.28); ctx.fill();
-      ctx.shadowBlur=0; ctx.strokeStyle='#b8801a'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(0,0,5.5,0,6.28); ctx.stroke();
-      ctx.fillStyle='#fff2bf'; ctx.beginPath(); ctx.arc(-1.4,-1.4,1.8,0,6.28); ctx.fill();
-      ctx.restore();
-    }
-    ctx.restore();
+    for (const c of coinsFx){ if (c.delay>0) continue; drawCoin(c.x, c.y, c.r, c.spin); }
   }
   if (freezeT > 0){
     ctx.save(); ctx.globalAlpha = Math.min(0.22, freezeT*0.08);

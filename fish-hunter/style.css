@@ -349,3 +349,9 @@ body.playing #weapon-bar{display:flex;}
 .dr-claim:hover{transform:translateY(-1px);}
 .dr-done{font-size:11px;color:var(--ink-dim);text-align:center;padding:6px;letter-spacing:.5px;}
 .prize-line{font-size:10px;letter-spacing:1.5px;color:var(--gold);text-align:center;font-weight:800;margin:-4px 0 10px;}
+
+/* credits coin icon */
+.credits-val{display:flex;align-items:center;gap:5px;justify-content:center;}
+.coin-ico{width:17px;height:17px;border-radius:50%;flex:0 0 auto;
+  background:url(assets/coin.png) center/contain no-repeat, radial-gradient(circle at 35% 30%,#fff0bf,#ffce63 55%,#dd9418);
+  box-shadow:0 0 6px rgba(255,206,99,.55), inset 0 0 0 1.5px #b8801a;}
