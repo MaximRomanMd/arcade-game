@@ -155,6 +155,7 @@ sceneImg.src = 'assets/scene.png';
 const cannonImg = new Image(); let cannonReady = false;
 cannonImg.onload = () => { cannonReady = true; };
 cannonImg.src = 'assets/cannon.png';
+const megAnim = new Image(); let megAnimReady=false; megAnim.onload=()=>{ megAnimReady=true; }; megAnim.src='assets/megalodon-anim.png';
 
 // ===== CANNON SKINS =====
 const SKINS = [
@@ -1018,6 +1019,18 @@ function drawFish(f){
   if (f.vy !== undefined && (f.vx||f.vy)){ const _ang=Math.atan2(f.vy,f.vx||0.0001); ctx.rotate(_ang); if (Math.abs(_ang)>Math.PI/2) ctx.scale(1,-1); }
   else if (f.dir < 0) ctx.scale(-1,1);
   const s = f.size;
+  if (f.key==='megalodon' && megAnimReady){
+    const cols=4, rows=4, frames=16;
+    const fw=megAnim.width/cols, fh=megAnim.height/rows;
+    const fr=Math.floor(performance.now()*0.01)%frames;
+    const cxx=(fr%cols)*fw, cyy=Math.floor(fr/cols)*fh;
+    ctx.shadowColor=f.glow; ctx.shadowBlur=22;
+    ctx.drawImage(megAnim, cxx, cyy, fw, fh, -s*1.9, -s*1.2, s*3.8, s*2.4);
+    ctx.shadowBlur=0;
+    if (f.hitFlash>0){ ctx.globalAlpha=Math.min(0.85,f.hitFlash*7); ctx.fillStyle='#ff2222'; ctx.beginPath(); ctx.ellipse(0,0,s*1.4,s*0.92,0,0,6.28); ctx.fill(); ctx.globalAlpha=1; }
+    if (f.hp<f.maxHp){ const wbar=s*1.9,hpf=f.hp/f.maxHp; ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-wbar/2,-s*1.5,wbar,5); ctx.fillStyle=hpf>0.5?'#39e6c4':hpf>0.25?'#ffce63':'#ff5d6c'; ctx.fillRect(-wbar/2,-s*1.5,wbar*hpf,5); }
+    ctx.restore(); return;
+  }
 
   // ── sprite hook (ludo.ai): use bitmap if provided ──
   const _sk = f.spriteFrom || f.key;
