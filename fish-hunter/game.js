@@ -67,7 +67,7 @@ TYPE_KEYS.forEach(k => {
 
 function pickType(elapsedFrac){
   // late game biases toward richer targets
-  let roll = Math.random() * TOTAL_WEIGHT;
+  let roll = srand() * TOTAL_WEIGHT;
   for (const k of TYPE_KEYS){
     let w = FISH_TYPES[k].weight;
     if (elapsedFrac > 0.5 && FISH_TYPES[k].value >= 30) w *= 1.35;
@@ -196,6 +196,20 @@ function toggleMute(){
 // ── helpers ──────────────────────────────────────────────────────
 const rand = (a,b) => a + Math.random()*(b-a);
 const clamp = (v,a,b) => v<a?a:v>b?b:v;
+const formatNum = n => Number(n).toLocaleString('en-US');
+
+// seeded RNG (mulberry32) — same seed => identical fish for everyone (FAIR rounds)
+let _rngS = 1;
+function setSeed(s){ _rngS = (s >>> 0) || 1; }
+function srand(){
+  _rngS |= 0; _rngS = (_rngS + 0x6D2B79F5) | 0;
+  let t = Math.imul(_rngS ^ (_rngS >>> 15), 1 | _rngS);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+const srange = (a,b) => a + srand()*(b-a);
+function dailySeed(){ const d = new Date(); return d.getUTCFullYear()*10000 + (d.getUTCMonth()+1)*100 + d.getUTCDate(); }
+let matchSeed = 0;   // the seed used by the current run (shown to player)
 
 function initBubbles(){
   bubbles = [];
@@ -280,15 +294,15 @@ function spawnFish(forceSchool){
   const frac = mode==='tournament' ? 1-(timeLeft/ROUND_TIME) : Math.min(elapsed/90,1);
   const key  = pickType(frac);
   const t    = FISH_TYPES[key];
-  const fromLeft = Math.random() < 0.5;
-  const y = rand(H*0.12, H*0.78);
-  const baseVx = (fromLeft?1:-1) * t.speed * rand(0.85,1.15);
+  const fromLeft = srand() < 0.5;
+  const y = srange(H*0.12, H*0.78);
+  const baseVx = (fromLeft?1:-1) * t.speed * srange(0.85,1.15);
   const f = {
     key, ...t, maxHp:t.hp,
     x: fromLeft ? -t.size*2 : W + t.size*2,
     y, vx: baseVx,
-    amp: rand(8, 36), freq: rand(0.6,1.6), phase: Math.random()*6.28,
-    baseY: y, t: 0, dir: fromLeft?1:-1, wig: Math.random()*6.28,
+    amp: srange(8, 36), freq: srange(0.6,1.6), phase: srand()*6.28,
+    baseY: y, t: 0, dir: fromLeft?1:-1, wig: srand()*6.28,
     hitFlash: 0,
   };
   fish.push(f);
@@ -297,8 +311,8 @@ function spawnFish(forceSchool){
     const n = key==='minnow'? 5 : 3;
     for (let i=1;i<=n;i++){
       fish.push({ ...f, x:f.x - f.dir*i*t.size*2.4,
-        baseY: clamp(y + rand(-30,30), H*0.1, H*0.8),
-        phase: Math.random()*6.28 });
+        baseY: clamp(y + srange(-30,30), H*0.1, H*0.8),
+        phase: srand()*6.28 });
     }
   }
 }
@@ -460,12 +474,40 @@ function updateDive(dt){
   if (diveT >= DIVE_DUR) revealMenu();
 }
 
+// populate the lobby menu: logo, daily challenge, your stats, leaderboard
+function renderMenu(){
+  if (logoImg.complete && logoImg.naturalWidth > 0){
+    const li = document.getElementById('menu-logo-img');
+    const lt = document.getElementById('menu-logo-text');
+    if (li){ li.src = logoImg.src; li.style.display = 'block'; }
+    if (lt) lt.style.display = 'none';
+  }
+  const md = document.getElementById('menu-daily');
+  if (md) md.innerHTML =
+    `<span class="dc-tag">DAILY CHALLENGE</span><b>#${dailySeed()}</b><span class="dc-sub">same fish for everyone today</span>`;
+  const ms = document.getElementById('menu-stats');
+  if (ms) ms.innerHTML =
+    `<div class="st-row"><span>Best score</span><b>${formatNum(ls(K.best))}</b></div>` +
+    `<div class="st-row"><span>Games played</span><b>${ls(K.games)}</b></div>` +
+    `<div class="st-row"><span>Credits won</span><b>${formatNum(ls(K.coins))}</b></div>` +
+    `<div class="st-row"><span>Best combo</span><b>x${ls(K.bigCombo)||1}</b></div>`;
+  const ml = document.getElementById('menu-lb');
+  if (ml){
+    let lb = []; try { lb = JSON.parse(localStorage.getItem(K.lb) || '[]'); } catch(e){}
+    ml.innerHTML = lb.length
+      ? lb.slice(0,5).map((e,i) =>
+          `<div class="lb-row${e.name===NICK?' me':''}"><span class="lb-rk">${['🥇','🥈','🥉'][i]||(i+1)}</span><span class="lb-nm">${e.name}</span><span class="lb-sc">${formatNum(e.score)}</span></div>`
+        ).join('')
+      : '<div class="lb-empty">No scores yet — be the first!</div>';
+  }
+}
+
 function revealMenu(){
   phase = 'menu';
   const boot = document.getElementById('overlay-boot');
   boot.classList.add('fade');
   diveStreaks = [];
-  document.getElementById('start-best').textContent = ls(K.best);
+  renderMenu();
   document.getElementById('overlay-start').classList.remove('hidden');
   setTimeout(() => { boot.classList.add('hidden'); boot.classList.remove('dive','fade'); }, 650);
 }
@@ -493,10 +535,10 @@ function update(dt){
   const frac = mode==='tournament' ? 1-(timeLeft/ROUND_TIME) : Math.min(elapsed/90,1);
   const interval = clamp(1.05 - frac*0.6, 0.42, 1.05);
   if (spawnTimer <= 0){
-    spawnFish(Math.random() < 0.4);
-    spawnTimer = interval * rand(0.7,1.3);
+    spawnFish(srand() < 0.4);
+    spawnTimer = interval * srange(0.7,1.3);
   }
-  if (fish.length < 4) spawnFish(Math.random()<0.5); // keep the sea alive
+  if (fish.length < 4) spawnFish(srand()<0.5); // keep the sea alive
 
   decayCombo(dt);
 
@@ -901,6 +943,8 @@ function startGame(){
   document.getElementById('combo-block').classList.remove('live');
   document.getElementById('overlay-start').classList.add('hidden');
   document.getElementById('overlay-end').classList.add('hidden');
+  matchSeed = mode==='tournament' ? dailySeed() : ((Math.random()*1e9)|0);
+  setSeed(matchSeed);
   for (let i=0;i<5;i++) spawnFish(false);
   phase = 'playing';
   running = true;
@@ -914,7 +958,7 @@ function exitToMenu(){
   document.body.classList.remove('playing');
   fish = []; bullets = []; particles = []; pops = []; rings = [];
   seedAmbient();
-  document.getElementById('start-best').textContent = ls(K.best);
+  renderMenu();
   document.getElementById('overlay-end').classList.add('hidden');
   document.getElementById('overlay-start').classList.remove('hidden');
 }
@@ -944,6 +988,21 @@ function endGame(){
     <div class="es"><b>${acc}%</b><span>ACCURACY</span></div>
     <div class="es"><b>x${stats.bestCombo}</b><span>BEST COMBO</span></div>
     <div class="es"><b>${stats.coins}</b><span>CREDITS</span></div>`;
+
+  // daily challenge label + local leaderboard
+  const dEl = document.getElementById('end-daily');
+  dEl.textContent = mode==='tournament'
+    ? `Daily Challenge #${matchSeed} - same fish for everyone`
+    : 'Free Hunt - practice run (not ranked)';
+  const lbEl = document.getElementById('end-lb');
+  let lb = []; try { lb = JSON.parse(localStorage.getItem(K.lb) || '[]'); } catch(e){}
+  if (mode==='tournament' && lb.length){
+    lbEl.innerHTML = '<div class="lb-title">TOP HUNTERS</div>' + lb.slice(0,5).map((e,i) => {
+      const me = (e.name===NICK && e.score===score);
+      return `<div class="lb-row${me?' me':''}"><span class="lb-rk">${['1','2','3'][i]||(i+1)}</span><span class="lb-nm">${e.name}${me?' (you)':''}</span><span class="lb-sc">${formatNum(e.score)}</span></div>`;
+    }).join('');
+  } else lbEl.innerHTML = '';
+
   document.getElementById('overlay-end').classList.remove('hidden');
 }
 
@@ -956,8 +1015,7 @@ function saveLeaderboard(sc){
   localStorage.setItem(K.lb, JSON.stringify(lb));
 }
 
-// ── overlay wiring ───────────────────────────────────────────────
-document.getElementById('start-best').textContent = ls(K.best);
+// overlay wiring
 document.querySelectorAll('#ov-mode .mode-btn').forEach(btn=>{
   btn.onclick = () => {
     document.querySelectorAll('#ov-mode .mode-btn').forEach(b=>b.classList.remove('active'));
@@ -965,9 +1023,6 @@ document.querySelectorAll('#ov-mode .mode-btn').forEach(btn=>{
   };
 });
 document.getElementById('btn-start').onclick = startGame;
-document.getElementById('btn-again').onclick = () => {
-  document.getElementById('start-best').textContent = ls(K.best);
-  startGame();
-};
+document.getElementById('btn-again').onclick = () => { startGame(); };
 document.getElementById('exit-btn').onclick = exitToMenu;
 document.getElementById('mute-btn').onclick = toggleMute;
