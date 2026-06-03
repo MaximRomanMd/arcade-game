@@ -155,7 +155,11 @@ sceneImg.src = 'assets/scene.png';
 const cannonImg = new Image(); let cannonReady = false;
 cannonImg.onload = () => { cannonReady = true; };
 cannonImg.src = 'assets/cannon.png';
-const megAnim = new Image(); let megAnimReady=false; megAnim.onload=()=>{ megAnimReady=true; }; megAnim.src='assets/megalodon-anim.png?v=2';
+const ANIM = {};
+[['minnow',0.013],['darter',0.014],['ray',0.012],['seacat',0.011],['angler',0.012],['golden',0.012],['levia',0.010],['shark',0.011],['whale',0.009],['megalodon',0.010]].forEach(function(e){
+  const k=e[0], img=new Image(), o={img:img,cols:4,rows:4,frames:16,rate:e[1],ready:false};
+  img.onload=function(){ o.ready=true; }; img.src='assets/'+k+'-anim.png?v=3'; ANIM[k]=o;
+});
 
 // ===== CANNON SKINS =====
 const SKINS = [
@@ -1019,17 +1023,19 @@ function drawFish(f){
   if (f.vy !== undefined && (f.vx||f.vy)){ const _ang=Math.atan2(f.vy,f.vx||0.0001); ctx.rotate(_ang); if (Math.abs(_ang)>Math.PI/2) ctx.scale(1,-1); }
   else if (f.dir < 0) ctx.scale(-1,1);
   const s = f.size;
-  if (f.key==='megalodon' && megAnimReady){
-    const cols=6, rows=4, frames=24;
-    const fw=megAnim.width/cols, fh=megAnim.height/rows;
-    const fr=Math.floor(performance.now()*0.011)%frames;
-    const cxx=(fr%cols)*fw, cyy=Math.floor(fr/cols)*fh;
-    ctx.shadowColor=f.glow; ctx.shadowBlur=22;
-    const bw=s*3.8, bh=bw/1.962;
-    ctx.drawImage(megAnim, cxx, cyy, fw, fh, -bw/2, -bh/2, bw, bh);
-    ctx.shadowBlur=0;
+  const _ak = f.spriteFrom || f.key;
+  let _an = ANIM[_ak]; if (!_an && f.jackpot) _an = ANIM['golden'];
+  if (_an && _an.ready){
+    const fw=_an.img.width/_an.cols, fh=_an.img.height/_an.rows;
+    if (f.animOff===undefined) f.animOff = Math.random()*_an.frames;
+    const fr=Math.floor(performance.now()*_an.rate + f.animOff)%_an.frames;
+    const cxx=(fr%_an.cols)*fw, cyy=Math.floor(fr/_an.cols)*fh;
+    const _glow=f.shiny||f.boss||f.jackpot;
+    if (_glow){ ctx.shadowColor=f.glow; ctx.shadowBlur=16; }
+    ctx.drawImage(_an.img, cxx, cyy, fw, fh, -s*1.9, -s*1.2, s*3.8, s*2.4);
+    if (_glow) ctx.shadowBlur=0;
     if (f.hitFlash>0){ ctx.globalAlpha=Math.min(0.85,f.hitFlash*7); ctx.fillStyle='#ff2222'; ctx.beginPath(); ctx.ellipse(0,0,s*1.4,s*0.92,0,0,6.28); ctx.fill(); ctx.globalAlpha=1; }
-    if (f.hp<f.maxHp){ const wbar=s*1.9,hpf=f.hp/f.maxHp; ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-wbar/2,-s*1.5,wbar,5); ctx.fillStyle=hpf>0.5?'#39e6c4':hpf>0.25?'#ffce63':'#ff5d6c'; ctx.fillRect(-wbar/2,-s*1.5,wbar*hpf,5); }
+    if (f.maxHp>3 && f.hp<f.maxHp){ const wbar=s*1.9,hpf=f.hp/f.maxHp; ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-wbar/2,-s*1.5,wbar,5); ctx.fillStyle=hpf>0.5?'#39e6c4':hpf>0.25?'#ffce63':'#ff5d6c'; ctx.fillRect(-wbar/2,-s*1.5,wbar*hpf,5); }
     ctx.restore(); return;
   }
 
