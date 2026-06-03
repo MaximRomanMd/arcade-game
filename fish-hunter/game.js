@@ -889,13 +889,14 @@ function drawFish(f){
   const spr = (FISH_TYPES[f.key] && FISH_TYPES[f.key].sprite) || (f.jackpot && FISH_TYPES.golden ? FISH_TYPES.golden.sprite : null);
   if (spr && spr.complete){
     const _ox=-s*1.9, _oy=-s*1.2, _dw=s*3.8, _dh=s*2.4;
-    const _N=9, _sw=spr.naturalWidth||spr.width, _sh=spr.naturalHeight||spr.height;
+    const _N=16, _sw=spr.naturalWidth||spr.width, _sh=spr.naturalHeight||spr.height;
     const _ss=_sw/_N, _sd=_dw/_N, _sp=f.wig;
     ctx.shadowColor = f.glow; ctx.shadowBlur = f.shiny||f.boss ? 20 : 13;
     for (let _i=0;_i<_N;_i++){
-      const _amp=(1-_i/(_N-1))*s*0.24;
-      const _yo=Math.sin(_sp*1.6 + _i*0.7)*_amp;
-      ctx.drawImage(spr, _i*_ss,0,_ss,_sh, _ox+_i*_sd-0.5, _oy+_yo, _sd+1.5, _dh);
+      const _t=1-_i/(_N-1);                 // 1 at tail .. 0 at head
+      const _amp=_t*_t*s*0.42;              // gentle near body, strong only at the very tail
+      const _yo=Math.sin(_sp*1.5 + _t*1.6)*_amp;
+      ctx.drawImage(spr, _i*_ss,0,_ss,_sh, _ox+_i*_sd-0.8, _oy+_yo, _sd+2, _dh);
     }
     ctx.shadowBlur = 0;
     // damage flash — fish turns red when hit
