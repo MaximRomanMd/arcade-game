@@ -223,6 +223,7 @@ function srand(){
 }
 const srange = (a,b) => a + srand()*(b-a);
 function dailySeed(){ const d = new Date(); return d.getUTCFullYear()*10000 + (d.getUTCMonth()+1)*100 + d.getUTCDate(); }
+function weekId(){ return Math.floor(Date.now()/(7*86400000)); }
 let matchSeed = 0;   // the seed used by the current run (shown to player)
 
 function initBubbles(){
@@ -555,22 +556,17 @@ function renderMenu(){
     if (lt) lt.style.display = 'none';
   }
   const md = document.getElementById('menu-daily');
-  if (md) md.innerHTML =
-    `<span class="dc-tag">DAILY CHALLENGE</span><b>#${dailySeed()}</b><span class="dc-sub">same fish for everyone today</span>`;
-  const ms = document.getElementById('menu-stats');
-  if (ms) ms.innerHTML =
-    `<div class="st-row"><span>Best score</span><b>${formatNum(ls(K.best))}</b></div>` +
-    `<div class="st-row"><span>Games played</span><b>${ls(K.games)}</b></div>` +
-    `<div class="st-row"><span>Credits won</span><b>${formatNum(ls(K.coins))}</b></div>` +
-    `<div class="st-row"><span>Best combo</span><b>x${ls(K.bigCombo)||1}</b></div>`;
+  if (md) md.textContent = `DAILY CHALLENGE #${dailySeed()}  -  same fish for all`;
   const ml = document.getElementById('menu-lb');
   if (ml){
-    let lb = []; try { lb = JSON.parse(localStorage.getItem(K.lb) || '[]'); } catch(e){}
-    ml.innerHTML = lb.length
-      ? lb.slice(0,5).map((e,i) =>
-          `<div class="lb-row${e.name===NICK?' me':''}"><span class="lb-rk">${['🥇','🥈','🥉'][i]||(i+1)}</span><span class="lb-nm">${e.name}</span><span class="lb-sc">${formatNum(e.score)}</span></div>`
+    const wk = weekId();
+    let wl = []; try { wl = JSON.parse(localStorage.getItem('fishhunter_lb_weekly') || '[]'); } catch(e){}
+    wl = wl.filter(e => e.wk === wk).sort((a,b)=>b.score-a.score);
+    ml.innerHTML = wl.length
+      ? wl.slice(0,8).map((e,i) =>
+          `<div class="lb-row${e.name===NICK?' me':''}"><span class="lb-rk">${i+1}</span><span class="lb-nm">${e.name}</span><span class="lb-sc">${formatNum(e.score)}</span></div>`
         ).join('')
-      : '<div class="lb-empty">No scores yet — be the first!</div>';
+      : '<div class="lb-empty">No scores yet this week - be the first!</div>';
   }
 }
 
@@ -1169,9 +1165,13 @@ function saveLeaderboard(sc){
   let lb = [];
   try { lb = JSON.parse(localStorage.getItem(K.lb) || '[]'); } catch(e){ lb=[]; }
   lb.push({ name:NICK, score:sc });
-  lb.sort((a,b)=>b.score-a.score);
-  lb = lb.slice(0,10);
+  lb.sort((a,b)=>b.score-a.score); lb = lb.slice(0,10);
   localStorage.setItem(K.lb, JSON.stringify(lb));
+  const wk = weekId();
+  let wl = []; try { wl = JSON.parse(localStorage.getItem('fishhunter_lb_weekly') || '[]'); } catch(e){ wl=[]; }
+  wl.push({ name:NICK, score:sc, wk });
+  wl = wl.filter(e => e.wk === wk).sort((a,b)=>b.score-a.score).slice(0,10);
+  localStorage.setItem('fishhunter_lb_weekly', JSON.stringify(wl));
 }
 
 // overlay wiring
@@ -1182,6 +1182,10 @@ document.querySelectorAll('#ov-mode .mode-btn').forEach(btn=>{
   };
 });
 document.getElementById('btn-start').onclick = startGame;
+const _sm = document.getElementById('soon-msg');
+function showSoon(w){ if(_sm){ _sm.textContent = w + ' - coming soon'; _sm.classList.add('show'); clearTimeout(showSoon._t); showSoon._t=setTimeout(()=>_sm.classList.remove('show'),1900); } }
+{ const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>showSoon('Multiplayer'); }
+{ const b=document.getElementById('btn-shop'); if(b) b.onclick=()=>showSoon('Shop'); }
 document.getElementById('btn-again').onclick = () => { startGame(); };
 document.getElementById('exit-btn').onclick = exitToMenu;
 document.getElementById('mute-btn').onclick = toggleMute;

@@ -75,51 +75,43 @@
 </div>
 
 <!-- ══════════ MENU OVERLAY ══════════ -->
-<div id="overlay-start" class="overlay hidden">
-  <div class="ov-card lobby">
-    <img id="menu-logo-img" class="menu-logo-img" alt="ABYSS HUNTER" />
-    <div class="ov-logo" id="menu-logo-text">ABYSS<span>HUNTER</span></div>
-    <p class="ov-tag">A skill-based deep-sea shooting arcade.</p>
+<div id="overlay-start" class="overlay lobby2 hidden">
+  <div class="lobby2-inner">
+    <img id="menu-logo-img" class="menu-logo-img2" alt="ABYSS HUNTER" />
+    <div class="ov-logo lobby2-logotext" id="menu-logo-text">ABYSS<span>HUNTER</span></div>
 
-    <div class="daily-card" id="menu-daily"></div>
-
-    <div class="lobby-grid">
-      <div class="lobby-panel">
-        <div class="panel-title">YOUR STATS</div>
-        <div id="menu-stats"></div>
+    <div class="lobby2-cols">
+      <div class="lobby2-left">
+        <div class="daily-mini" id="menu-daily"></div>
+        <div class="ov-mode" id="ov-mode">
+          <button class="mode-btn active" data-mode="tournament"><span class="mode-name">DAILY</span><span class="mode-sub">same fish for all</span></button>
+          <button class="mode-btn" data-mode="free"><span class="mode-name">PRACTICE</span><span class="mode-sub">no timer</span></button>
+        </div>
+        <button id="btn-start" class="menu-cta">PLAY SOLO</button>
+        <button id="btn-multi" class="menu-cta secondary">MULTIPLAYER<span class="soon">SOON</span></button>
+        <button id="btn-shop" class="menu-cta secondary">SHOP<span class="soon">SOON</span></button>
+        <div id="soon-msg" class="soon-msg"></div>
       </div>
-      <div class="lobby-panel">
-        <div class="panel-title">TOP HUNTERS</div>
-        <div id="menu-lb"></div>
+
+      <div class="lobby2-right">
+        <div class="panel-title">WEEKLY - BEST SCORES</div>
+        <div id="menu-lb" class="weekly-lb"></div>
       </div>
     </div>
-
-    <div class="ov-mode" id="ov-mode">
-      <button class="mode-btn active" data-mode="tournament">
-        <span class="mode-name">TOURNAMENT</span>
-        <span class="mode-sub">90s · same fish for all · pure skill</span>
-      </button>
-      <button class="mode-btn" data-mode="free">
-        <span class="mode-name">FREE HUNT</span>
-        <span class="mode-sub">no timer · practice the depths</span>
-      </button>
-    </div>
-
-    <button id="btn-start" class="big-btn">DIVE IN</button>
 
     <details class="how-to">
       <summary>How to play</summary>
       <div class="ov-rules">
-        <div class="rule"><span class="rk">AIM</span> Move your pointer — the cannon tracks it.</div>
-        <div class="rule"><span class="rk">FIRE</span> Click / tap &amp; hold to shoot.</div>
-        <div class="rule"><span class="rk">+ / −</span> Bigger shots cost more credits but hit harder.</div>
+        <div class="rule"><span class="rk">AIM</span> Move your pointer - the cannon tracks it.</div>
+        <div class="rule"><span class="rk">FIRE</span> Click / tap and hold to shoot.</div>
+        <div class="rule"><span class="rk">POWER</span> Shoot the glowing orbs to activate power-ups.</div>
         <div class="rule"><span class="rk">GOAL</span> Highest score before the clock runs out.</div>
       </div>
     </details>
   </div>
 </div>
 
-<!-- ══════════ GAME OVER OVERLAY ══════════ -->
+<!-- GAME OVER OVERLAY -->
 <div id="overlay-end" class="overlay hidden">
   <div class="ov-card">
     <div class="ov-result">RUN COMPLETE</div>
