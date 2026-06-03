@@ -537,7 +537,7 @@ function startDive(){
     diveStreaks.push({ x:Math.random()*W, y:H+Math.random()*H,
       r:rand(2,7), spd:rand(380,820), wob:rand(-30,30) });
   }
-  shake = 10;
+  shake = 0;
 }
 function updateDive(dt){
   diveT += dt;
@@ -1021,7 +1021,7 @@ function render(time){
 
   // vignette + impact flash (screen-space, no shake)
   const vg = ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.85);
-  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1, phase==='playing' ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.26)');
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1, phase==='playing' ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.1)');
   ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
 
   if (phase==='playing' && combo >= 3){
