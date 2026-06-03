@@ -15,6 +15,7 @@
   <!-- top HUD -->
   <header id="hud">
     <a id="back-btn" href="../game-portal/index.html" title="Back to Portal">‹ PORTAL</a>
+    <button id="mute-btn" title="Sound on/off">🔊</button>
 
     <div class="hud-block">
       <span class="hud-label">SCORE</span>
@@ -35,6 +36,8 @@
       <span class="hud-label">COMBO</span>
       <span class="hud-value combo" id="hud-combo">x1</span>
     </div>
+
+    <button id="exit-btn" title="Exit to menu">⤬ EXIT</button>
   </header>
 
   <!-- the game canvas -->
@@ -53,8 +56,26 @@
 
 </div>
 
-<!-- ══════════ START OVERLAY ══════════ -->
-<div id="overlay-start" class="overlay">
+<!-- ══════════ BOOT / SPLASH ══════════ -->
+<div id="overlay-boot" class="overlay boot">
+  <div class="boot-inner">
+    <!-- ludo.ai hook: drop assets/logo.png and it replaces the text logo automatically -->
+    <img id="boot-logo-img" alt="" />
+    <div id="boot-logo-text" class="boot-logo">ABYSS<span>HUNTER</span></div>
+    <div class="boot-sub">DEEP-SEA SKILL ARCADE</div>
+
+    <div class="loading-wrap">
+      <div class="loading-track"><div id="loading-fill" class="loading-fill"></div></div>
+      <div class="loading-row">
+        <span id="loading-msg">Charting the depths…</span>
+        <span id="loading-pct">0%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MENU OVERLAY ══════════ -->
+<div id="overlay-start" class="overlay hidden">
   <div class="ov-card">
     <div class="ov-logo">ABYSS<span>HUNTER</span></div>
     <p class="ov-tag">A skill-based deep-sea shooting arcade.<br>Aim. Track. Hit harder targets for more.</p>

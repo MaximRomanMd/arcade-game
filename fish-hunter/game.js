@@ -58,6 +58,13 @@ const FISH_TYPES = {
 const TYPE_KEYS = Object.keys(FISH_TYPES);
 const TOTAL_WEIGHT = TYPE_KEYS.reduce((s,k)=>s+FISH_TYPES[k].weight,0);
 
+// optional ludo.ai fish art: assets/fish-<key>.png auto-loads into each type
+TYPE_KEYS.forEach(k => {
+  const img = new Image();
+  img.onload = () => { FISH_TYPES[k].sprite = img; };
+  img.src = `assets/fish-${k}.png`;
+});
+
 function pickType(elapsedFrac){
   // late game biases toward richer targets
   let roll = Math.random() * TOTAL_WEIGHT;
@@ -83,6 +90,108 @@ let combo = 1, comboTimer = 0, comboKills = 0;
 let spawnTimer = 0, elapsed = 0;
 let stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
 const cannon = { x: W/2, y: H, len: 46 };
+// cannon sprite geometry (measured from cannon.png): joint at 66% down, ratio 0.756
+const CN_TH = 156;                 // drawn sprite height
+const CN_TW = CN_TH * 0.756;       // drawn width (natural ratio)
+const CN_JOINT = 0.663;            // joint (pivot) fraction from top
+const CN_BARREL = CN_TH * CN_JOINT * 0.9; // muzzle distance from pivot
+
+// ── phase / boot (splash → loading → menu → playing → over) ──────
+let phase = 'boot';              // boot | dive | menu | playing | over
+let bootT = 0;
+const BOOT_DUR = 2.6;            // seconds of splash+loading
+const LOAD_MSGS = [
+  'Charting the depths…', 'Calibrating the cannon…',
+  'Releasing the shoals…', 'Pressurising the hull…', 'Diving in…',
+];
+let cannonSway = 0;              // gentle barrel motion on menu/splash
+let diveT = 0;                   // dive transition timer
+const DIVE_DUR = 1.25;           // seconds of the plunge
+let diveStreaks = [];            // fast rising bubbles during the dive
+
+// optional ludo.ai splash logo (assets/logo.png) — auto-used if present
+const logoImg = new Image();
+logoImg.onload  = () => {
+  const el = document.getElementById('boot-logo-img');
+  const tx = document.getElementById('boot-logo-text');
+  if (el){ el.src = logoImg.src; el.style.display = 'block'; }
+  if (tx) tx.style.display = 'none';
+};
+logoImg.src = 'assets/logo.png';
+
+// optional ludo.ai seabed/background image (assets/scene.png)
+const sceneImg = new Image(); let sceneReady = false;
+sceneImg.onload = () => { sceneReady = true; };
+sceneImg.src = 'assets/scene.png';
+
+// optional ludo.ai cannon turret (assets/cannon.png) — barrel pointing UP
+const cannonImg = new Image(); let cannonReady = false;
+cannonImg.onload = () => { cannonReady = true; };
+cannonImg.src = 'assets/cannon.png';
+
+// ════════════════════════════════════════════════════════════════
+//  SOUND — procedural Web Audio (no files)
+// ════════════════════════════════════════════════════════════════
+let actx = null, masterGain = null, ambGain = null, muted = false;
+function initAudio(){
+  if (actx){ if (actx.state === 'suspended') actx.resume(); return; }
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = actx.createGain();
+    masterGain.gain.value = muted ? 0 : 0.9;
+    masterGain.connect(actx.destination);
+    startAmbient();
+  } catch(e){ actx = null; }
+}
+function startAmbient(){
+  if (!actx) return;
+  ambGain = actx.createGain(); ambGain.gain.value = 0; ambGain.connect(masterGain);
+  const o1 = actx.createOscillator(), o2 = actx.createOscillator();
+  o1.type = 'sine'; o2.type = 'sine'; o1.frequency.value = 56; o2.frequency.value = 84;
+  const lfo = actx.createOscillator(), lfoG = actx.createGain();
+  lfo.frequency.value = 0.08; lfoG.gain.value = 9; lfo.connect(lfoG); lfoG.connect(o2.frequency);
+  const flt = actx.createBiquadFilter(); flt.type = 'lowpass'; flt.frequency.value = 300;
+  o1.connect(flt); o2.connect(flt); flt.connect(ambGain);
+  o1.start(); o2.start(); lfo.start();
+  ambGain.gain.linearRampToValueAtTime(0.10, actx.currentTime + 2.5);
+}
+function _env(g, t0, vol, dur){
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+}
+function blip({freq=440, type='sine', dur=0.12, vol=0.25, slideTo=null}){
+  if (!actx) return;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, actx.currentTime);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20,slideTo), actx.currentTime + dur);
+  o.connect(g); g.connect(masterGain);
+  _env(g, actx.currentTime, vol, dur);
+  o.start(); o.stop(actx.currentTime + dur + 0.03);
+}
+function noiseBurst({dur=0.3, vol=0.35, freq=800, type='lowpass', q=1}){
+  if (!actx) return;
+  const buf = actx.createBuffer(1, Math.floor(actx.sampleRate*dur), actx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+  const n = actx.createBufferSource(); n.buffer = buf;
+  const f = actx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+  const g = actx.createGain();
+  n.connect(f); f.connect(g); g.connect(masterGain);
+  _env(g, actx.currentTime, vol, dur);
+  n.start(); n.stop(actx.currentTime + dur + 0.03);
+}
+function sfxShoot(){ blip({freq:680,type:'square',dur:0.08,vol:0.10,slideTo:240}); noiseBurst({dur:0.05,vol:0.04,freq:2000,type:'highpass'}); }
+function sfxHit(){ blip({freq:320,type:'triangle',dur:0.05,vol:0.10,slideTo:170}); }
+function sfxKill(big){ noiseBurst({dur:big?0.6:0.28,vol:big?0.5:0.3,freq:big?480:900,type:'lowpass',q:1}); blip({freq:big?150:260,type:'sine',dur:big?0.5:0.22,vol:0.16,slideTo:55}); }
+function sfxCoin(){ blip({freq:1300,type:'sine',dur:0.12,vol:0.08,slideTo:2050}); }
+function sfxCombo(n){ const f=480+n*80; blip({freq:f,type:'sine',dur:0.15,vol:0.12,slideTo:f*1.5}); }
+function sfxDive(){ noiseBurst({dur:1.0,vol:0.4,freq:700,type:'lowpass',q:0.7}); blip({freq:420,type:'sine',dur:0.9,vol:0.13,slideTo:70}); }
+function toggleMute(){
+  muted = !muted;
+  if (masterGain) masterGain.gain.value = muted ? 0 : 0.9;
+  const b = document.getElementById('mute-btn'); if (b) b.textContent = muted ? '🔇' : '🔊';
+}
 
 // ── helpers ──────────────────────────────────────────────────────
 const rand = (a,b) => a + Math.random()*(b-a);
@@ -105,6 +214,7 @@ function pointerPos(e){
 }
 canvas.addEventListener('pointermove', e => { aim = pointerPos(e); });
 canvas.addEventListener('pointerdown', e => {
+  initAudio();
   aim = pointerPos(e); firing = true; fireTimer = 0; tryFire();
 });
 window.addEventListener('pointerup',   () => firing = false);
@@ -138,8 +248,9 @@ function tryFire(){
   stats.shots++;
   const dx = aim.x - cannon.x, dy = aim.y - cannon.y;
   const a  = Math.atan2(dy, dx);
-  const muzzleX = cannon.x + Math.cos(a)*cannon.len;
-  const muzzleY = cannon.y + Math.sin(a)*cannon.len;
+  const bl = cannonReady ? CN_BARREL : cannon.len;
+  const muzzleX = cannon.x + Math.cos(a)*bl;
+  const muzzleY = cannon.y + Math.sin(a)*bl;
   const speed = 720 + wpnLevel*40;
   // higher levels fire a tight spread of pellets
   const pellets = wpnLevel >= 4 ? 3 : wpnLevel >= 2 ? 2 : 1;
@@ -160,6 +271,7 @@ function tryFire(){
       r:rand(1,3), life:.25, max:.25, c:'#aef9ec' });
   }
   shake = Math.min(shake + wpnLevel*0.6, 7);
+  sfxShoot();
   updateHUD();
 }
 
@@ -195,7 +307,9 @@ function spawnFish(forceSchool){
 function addKillCombo(){
   comboTimer = COMBO_WINDOW;
   comboKills++;
+  const _oldCombo = combo;
   combo = clamp(1 + Math.floor(comboKills/2), 1, 8);
+  if (combo > _oldCombo) sfxCombo(combo);
   stats.bestCombo = Math.max(stats.bestCombo, combo);
   const cb = document.getElementById('combo-block');
   cb.classList.add('live');
@@ -216,6 +330,7 @@ function decayCombo(dt){
 function hurtFish(f, dmg, bx, by){
   f.hp -= dmg; f.hitFlash = 0.12;
   stats.hits++;
+  sfxHit();
   for (let i=0;i<5;i++){
     particles.push({ x:bx, y:by, vx:rand(-90,90), vy:rand(-90,90),
       r:rand(1,2.5), life:.3, max:.3, c:f.glow });
@@ -228,6 +343,7 @@ function killFish(f){
   score += gained;
   credits += f.coins;
   stats.kills++; stats.coins += f.coins;
+  sfxKill(f.boss || f.shiny); sfxCoin();
   if (f.value > stats.biggestVal){ stats.biggestVal = f.value; stats.biggest = labelFor(f.key); }
   addKillCombo();
 
@@ -271,12 +387,95 @@ function updateHUD(){
     mode==='tournament' ? Math.ceil(timeLeft) : '∞';
 }
 
+// ── ambient (decorative) fish for splash + menu ──────────────────
+function spawnAmbient(){
+  const calm = ['minnow','darter','ray','golden'];
+  const key  = calm[(Math.random()*calm.length)|0];
+  const t    = FISH_TYPES[key];
+  const fromLeft = Math.random() < 0.5;
+  const y = rand(H*0.14, H*0.82);
+  fish.push({ key, ...t, maxHp:t.hp, ambient:true,
+    x: fromLeft ? -t.size*2 : W + t.size*2, y, baseY:y,
+    vx:(fromLeft?1:-1)*t.speed*rand(0.4,0.7),
+    amp:rand(10,30), freq:rand(0.5,1.2), phase:Math.random()*6.28,
+    t:0, dir:fromLeft?1:-1, wig:Math.random()*6.28, hitFlash:0 });
+}
+function seedAmbient(){ fish = []; for(let i=0;i<9;i++){ spawnAmbient(); fish[i].x = rand(0,W); } }
+
+function updateAmbient(dt){
+  cannon.x = W/2; cannon.y = H - 40;
+  cannonSway += dt;
+  for (const f of fish){
+    f.t += dt; f.wig += dt*6;
+    f.x += f.vx*dt;
+    f.y = f.baseY + Math.sin(f.t*f.freq*3 + f.phase)*f.amp;
+    if (f.x < -f.size*3 || f.x > W+f.size*3) f._gone = true;
+  }
+  fish = fish.filter(f => !f._gone);
+  while (fish.length < 9) spawnAmbient();
+  for (const bu of bubbles){
+    bu.y -= bu.spd*dt; bu.x += bu.drift*dt;
+    if (bu.y < -10){ bu.y = H+10; bu.x = Math.random()*W; }
+  }
+  for (const p of particles){ p.life -= dt; p.x += p.vx*dt; p.y += p.vy*dt; }
+  particles = particles.filter(p => p.life > 0);
+}
+
+// ── boot: splash + loading, then reveal menu ─────────────────────
+function updateBoot(dt){
+  bootT += dt;
+  const p = clamp(bootT / BOOT_DUR, 0, 1);
+  const eased = p*p*(3-2*p);
+  const fill = document.getElementById('loading-fill');
+  const pct  = document.getElementById('loading-pct');
+  const msg  = document.getElementById('loading-msg');
+  if (fill) fill.style.width = (eased*100).toFixed(0) + '%';
+  if (pct)  pct.textContent  = Math.round(eased*100) + '%';
+  if (msg)  msg.textContent  = LOAD_MSGS[Math.min(LOAD_MSGS.length-1, Math.floor(p*LOAD_MSGS.length))];
+  updateAmbient(dt);
+  if (p >= 1) startDive();
+}
+
+// ── dive: the plunge from splash down into the sea ───────────────
+function startDive(){
+  if (phase !== 'boot') return;
+  phase = 'dive'; diveT = 0;
+  document.getElementById('overlay-boot').classList.add('dive'); // title flies up
+  flash = 0.7; flashColor = '#aef9ec';                            // splash flash
+  // a curtain of fast rising bubbles
+  diveStreaks = [];
+  for (let i=0;i<70;i++){
+    diveStreaks.push({ x:Math.random()*W, y:H+Math.random()*H,
+      r:rand(2,7), spd:rand(380,820), wob:rand(-30,30) });
+  }
+  shake = 10;
+}
+function updateDive(dt){
+  diveT += dt;
+  updateAmbient(dt);
+  for (const s of diveStreaks){
+    s.y -= s.spd*dt; s.x += s.wob*dt;
+  }
+  diveStreaks = diveStreaks.filter(s => s.y > -20);
+  if (diveT >= DIVE_DUR) revealMenu();
+}
+
+function revealMenu(){
+  phase = 'menu';
+  const boot = document.getElementById('overlay-boot');
+  boot.classList.add('fade');
+  diveStreaks = [];
+  document.getElementById('start-best').textContent = ls(K.best);
+  document.getElementById('overlay-start').classList.remove('hidden');
+  setTimeout(() => { boot.classList.add('hidden'); boot.classList.remove('dive','fade'); }, 650);
+}
+
 // ════════════════════════════════════════════════════════════════
 //  UPDATE
 // ════════════════════════════════════════════════════════════════
 function update(dt){
   elapsed += dt;
-  cannon.x = W/2; cannon.y = H + 6;
+  cannon.x = W/2; cannon.y = H - 40;
 
   if (mode==='tournament'){
     timeLeft -= dt;
@@ -356,33 +555,86 @@ function update(dt){
 //  RENDER
 // ════════════════════════════════════════════════════════════════
 function drawBackground(time){
-  // depth gradient
-  const g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#08314a'); g.addColorStop(0.45,'#04121f'); g.addColorStop(1,'#01070d');
-  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  const ts = time*0.001;
 
-  // caustic light rays from the surface
+  // optional ludo.ai scene art (assets/scene.png) drawn 'cover'
+  if (sceneReady){
+    const ir = sceneImg.width/sceneImg.height, cr = W/H;
+    let dw,dh; if (cr>ir){ dw=W; dh=W/ir; } else { dh=H; dw=H*ir; }
+    ctx.drawImage(sceneImg, (W-dw)/2, (H-dh)/2, dw, dh);
+    const ov = ctx.createLinearGradient(0,0,0,H);
+    ov.addColorStop(0,'rgba(4,18,31,.35)'); ov.addColorStop(1,'rgba(1,7,13,.78)');
+    ctx.fillStyle = ov; ctx.fillRect(0,0,W,H);
+  } else {
+    // depth gradient
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#0a3a55'); g.addColorStop(0.4,'#06182a');
+    g.addColorStop(0.78,'#04101c'); g.addColorStop(1,'#010609');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    // surface glow
+    const sg = ctx.createLinearGradient(0,0,0,H*0.3);
+    sg.addColorStop(0,'rgba(90,230,225,0.14)'); sg.addColorStop(1,'rgba(90,230,225,0)');
+    ctx.fillStyle = sg; ctx.fillRect(0,0,W,H*0.3);
+  }
+
+  // god rays from the surface
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  const rays = 5;
+  const rays = 6;
   for (let i=0;i<rays;i++){
-    const rx = (W/(rays-1))*i + Math.sin(time*0.0003 + i)*60;
-    const grad = ctx.createLinearGradient(rx, 0, rx+90, H);
-    grad.addColorStop(0,'rgba(80,220,220,0.10)');
+    const rx = (W/(rays-1))*i + Math.sin(ts*0.3 + i*1.7)*70;
+    const wob = Math.sin(ts*0.5 + i)*0.25 + 0.75;
+    const grad = ctx.createLinearGradient(rx, 0, rx+120, H);
+    grad.addColorStop(0,`rgba(120,235,225,${0.09*wob})`);
+    grad.addColorStop(0.6,`rgba(80,200,210,${0.03*wob})`);
     grad.addColorStop(1,'rgba(80,220,220,0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.moveTo(rx-50,0); ctx.lineTo(rx+50,0);
-    ctx.lineTo(rx+150,H); ctx.lineTo(rx-10,H); ctx.closePath();
+    ctx.moveTo(rx-46,0); ctx.lineTo(rx+46,0);
+    ctx.lineTo(rx+170,H); ctx.lineTo(rx-20,H); ctx.closePath();
     ctx.fill();
   }
   ctx.restore();
+
+  // drifting particulate (stateless, derived from time)
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  for (let i=0;i<60;i++){
+    const seed = i*12.9898;
+    const px = ((Math.sin(seed)*43758.5+ts*6*(0.3+(i%5)*0.1)) % 1 + 1) % 1 * W;
+    const py = ((Math.cos(seed)*23421.6 - ts*4*(0.2+(i%4)*0.1)) % 1 + 1) % 1 * H;
+    const pr = 0.5 + (i%3)*0.6;
+    ctx.fillStyle = `rgba(150,225,225,${0.05+(i%4)*0.015})`;
+    ctx.beginPath(); ctx.arc(px,py,pr,0,6.28); ctx.fill();
+  }
+  ctx.restore();
+
+  // seabed silhouette + swaying kelp
+  if (!sceneReady){
+    ctx.save();
+    ctx.fillStyle = '#020a10';
+    ctx.beginPath();
+    ctx.moveTo(0,H);
+    for (let x=0;x<=W;x+=40) ctx.lineTo(x, H-26 - Math.sin(x*0.01+ts*0.2)*10 - 14);
+    ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(20,90,80,.5)'; ctx.lineWidth = 6; ctx.lineCap='round';
+    for (let k=0;k<7;k++){
+      const kx = (W/7)*k + 30;
+      ctx.beginPath(); ctx.moveTo(kx, H);
+      const h1 = 70+ (k%3)*30;
+      ctx.quadraticCurveTo(kx + Math.sin(ts*0.8+k)*20, H-h1*0.6,
+                           kx + Math.sin(ts*0.8+k)*34, H-h1);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   // bubbles
   ctx.save();
   for (const bu of bubbles){
     ctx.beginPath(); ctx.arc(bu.x,bu.y,bu.r,0,6.28);
     ctx.fillStyle = `rgba(170,240,240,${bu.a})`; ctx.fill();
+    ctx.beginPath(); ctx.arc(bu.x-bu.r*0.3,bu.y-bu.r*0.3,bu.r*0.35,0,6.28);
+    ctx.fillStyle = `rgba(255,255,255,${bu.a*0.8})`; ctx.fill();
   }
   ctx.restore();
 }
@@ -394,9 +646,25 @@ function drawFish(f){
   const s = f.size;
 
   // ── sprite hook (ludo.ai): use bitmap if provided ──
-  if (f.sprite && f.sprite.complete){
-    ctx.shadowColor = f.glow; ctx.shadowBlur = 22;
-    ctx.drawImage(f.sprite, -s*1.6, -s, s*3.2, s*2);
+  const spr = FISH_TYPES[f.key] && FISH_TYPES[f.key].sprite;
+  if (spr && spr.complete){
+    ctx.shadowColor = f.glow; ctx.shadowBlur = f.shiny||f.boss ? 26 : 16;
+    ctx.drawImage(spr, -s*1.9, -s*1.2, s*3.8, s*2.4);
+    ctx.shadowBlur = 0;
+    // hit flash — quick white pulse over the fish
+    if (f.hitFlash > 0){
+      ctx.globalAlpha = Math.min(0.7, f.hitFlash*5);
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.ellipse(0, 0, s*1.35, s*0.9, 0, 0, 6.28); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    // hp bar for tougher fish
+    if (f.maxHp > 3 && f.hp < f.maxHp){
+      const wbar = s*1.9, hpf = f.hp/f.maxHp;
+      ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-wbar/2, -s*1.5, wbar, 5);
+      ctx.fillStyle = hpf>0.5?'#39e6c4':hpf>0.25?'#ffce63':'#ff5d6c';
+      ctx.fillRect(-wbar/2, -s*1.5, wbar*hpf, 5);
+    }
     ctx.restore(); return;
   }
 
@@ -460,20 +728,39 @@ function drawFish(f){
 }
 
 function drawCannon(){
-  const dx = aim.x - cannon.x, dy = aim.y - cannon.y;
-  const a  = Math.atan2(dy, dx);
+  let a;
+  if (phase === 'playing'){
+    a = Math.atan2(aim.y - cannon.y, aim.x - cannon.x);
+  } else {
+    a = -Math.PI/2 + Math.sin(cannonSway*0.6)*0.5;   // gentle sweep on menu
+  }
+  const bl = cannonReady ? CN_BARREL : cannon.len;
+  const mx = cannon.x + Math.cos(a)*bl, my = cannon.y + Math.sin(a)*bl;
+
+  // aim guide — from the muzzle, along the exact shot direction
+  if (phase === 'playing'){
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = '#28e0c8'; ctx.lineWidth = 2; ctx.setLineDash([6,10]);
+    ctx.beginPath(); ctx.moveTo(mx, my);
+    ctx.lineTo(mx + Math.cos(a)*900, my + Math.sin(a)*900); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ── ludo.ai cannon sprite: barrel (up in image) rotated to aim ──
+  if (cannonReady){
+    ctx.save();
+    ctx.translate(cannon.x, cannon.y);           // pivot = joint
+    ctx.rotate(a + Math.PI/2);                    // barrel points exactly along the shot
+    ctx.shadowColor = '#28e0c8'; ctx.shadowBlur = 14;
+    ctx.drawImage(cannonImg, -CN_TW/2, -CN_JOINT*CN_TH, CN_TW, CN_TH);
+    ctx.restore();
+    return;
+  }
+
+  // vector barrel (fallback)
   ctx.save();
   ctx.translate(cannon.x, cannon.y);
-
-  // aim guide
-  ctx.save();
-  ctx.rotate(a);
-  ctx.globalAlpha = 0.18;
-  ctx.strokeStyle = '#28e0c8'; ctx.lineWidth = 2; ctx.setLineDash([6,10]);
-  ctx.beginPath(); ctx.moveTo(cannon.len,0); ctx.lineTo(900,0); ctx.stroke();
-  ctx.restore();
-
-  // barrel
   ctx.rotate(a);
   ctx.shadowColor = '#28e0c8'; ctx.shadowBlur = 18;
   const bg = ctx.createLinearGradient(0,-9,0,9);
@@ -505,7 +792,25 @@ function render(time){
   // screen shake
   if (shake > 0) ctx.translate(rand(-shake,shake), rand(-shake,shake));
 
+  // dive plunge: zoom punch toward the depths
+  if (phase === 'dive'){
+    const dp = clamp(diveT/DIVE_DUR,0,1);
+    const z  = 1 + (1-(1-dp)*(1-dp))*0.22;
+    ctx.translate(W/2, H*0.62); ctx.scale(z,z); ctx.translate(-W/2,-H*0.62);
+  }
+
   drawBackground(time);
+
+  // dive bubble curtain
+  if (phase === 'dive' && diveStreaks.length){
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    for (const s of diveStreaks){
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = '#bdfaf0';
+      ctx.beginPath(); ctx.ellipse(s.x, s.y, s.r*0.6, s.r*1.8, 0, 0, 6.28); ctx.fill();
+    }
+    ctx.restore(); ctx.globalAlpha = 1;
+  }
 
   // rings (shockwaves)
   ctx.save(); ctx.globalCompositeOperation='lighter';
@@ -574,10 +879,14 @@ let last = performance.now();
 function loop(now){
   const dt = Math.min((now-last)/1000, 0.05);
   last = now;
-  if (running) update(dt);
+  if (phase === 'boot')        updateBoot(dt);
+  else if (phase === 'dive')   updateDive(dt);
+  else if (phase === 'playing' && running) update(dt);
+  else                         updateAmbient(dt);   // menu / over
   render(now);
   requestAnimationFrame(loop);
 }
+seedAmbient();
 requestAnimationFrame(loop);
 
 // ── start / end ──────────────────────────────────────────────────
@@ -593,11 +902,26 @@ function startGame(){
   document.getElementById('overlay-start').classList.add('hidden');
   document.getElementById('overlay-end').classList.add('hidden');
   for (let i=0;i<5;i++) spawnFish(false);
+  phase = 'playing';
   running = true;
+  document.body.classList.add('playing');
+  initAudio();
+}
+
+// quit current run (esp. Free Hunt / training) back to the menu
+function exitToMenu(){
+  running = false; firing = false; phase = 'menu';
+  document.body.classList.remove('playing');
+  fish = []; bullets = []; particles = []; pops = []; rings = [];
+  seedAmbient();
+  document.getElementById('start-best').textContent = ls(K.best);
+  document.getElementById('overlay-end').classList.add('hidden');
+  document.getElementById('overlay-start').classList.remove('hidden');
 }
 
 function endGame(){
-  running = false; firing = false;
+  running = false; firing = false; phase = 'over';
+  document.body.classList.remove('playing');
   // persist
   const prevBest = ls(K.best);
   const isPB = score > prevBest;
@@ -645,3 +969,5 @@ document.getElementById('btn-again').onclick = () => {
   document.getElementById('start-best').textContent = ls(K.best);
   startGame();
 };
+document.getElementById('exit-btn').onclick = exitToMenu;
+document.getElementById('mute-btn').onclick = toggleMute;

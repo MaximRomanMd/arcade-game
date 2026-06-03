@@ -3,7 +3,7 @@
    Offline-ready caching for instant loads
 ══════════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'arcade-portal-v1';
+const CACHE_NAME = 'arcade-portal-v2';
 
 // Files to pre-cache on install (portal shell)
 const PRECACHE = [
@@ -23,6 +23,7 @@ const GAME_PATTERNS = [
     /\/arcade-game\/blob-game\//,
     /\/arcade-game\/bingo-game\//,
     /\/arcade-game\/tower-rush\//,
+    /\/arcade-game\/fish-hunter\//,
 ];
 
 // ── INSTALL: pre-cache portal shell ──────────────────
