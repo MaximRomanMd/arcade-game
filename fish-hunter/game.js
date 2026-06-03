@@ -73,7 +73,7 @@ TYPE_KEYS.forEach(k => {
 });
 // per-fish ludo swim animations. add one [key,cols,rows,frames,rate] line per fish.
 const FISHANIM = {};
-[['ray',5,5,25,0.00833],['darter',5,5,25,0.00833],['minnow',6,6,36,0.012]].forEach(function(e){
+[['ray',5,5,25,0.00833],['darter',5,5,25,0.00833],['minnow',6,6,36,0.012],['angler',5,5,25,0.00833],['levia',5,5,25,0.00833]].forEach(function(e){
   const o={img:new Image(), cols:e[1], rows:e[2], frames:e[3], rate:e[4], ready:false};
   o.img.onload=function(){ o.ready=true; };
   o.img.src=`assets/${e[0]}-anim.png?t=${Date.now()}`;
