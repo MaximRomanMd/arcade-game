@@ -88,6 +88,7 @@ let credits = START_CREDITS;
 let score = 0, timeLeft = ROUND_TIME, shake = 0, flash = 0, flashColor = '#28e0c8';
 let combo = 1, comboTimer = 0, comboKills = 0;
 let spawnTimer = 0, elapsed = 0;
+let hitStop = 0;
 let stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
 const cannon = { x: W/2, y: H, len: 46 };
 // cannon sprite geometry (measured from cannon.png): joint at 66% down, ratio 0.756
@@ -380,9 +381,17 @@ function killFish(f){
   // score popup
   pops.push({ x:f.x, y:f.y, txt:'+'+gained, life:.9, max:.9,
     c: combo>1 ? '#ffce63' : '#aef9ec', big:f.boss||f.shiny });
-  // screen impact
-  shake = Math.min(shake + (f.boss?16:f.size>30?7:3), 22);
-  if (f.boss || f.shiny){ flash = 0.35; flashColor = f.glow; }
+  // extra juice: core flash, shards, second shockwave
+  const big = f.boss || f.shiny || f.size > 30;
+  particles.push({ x:f.x, y:f.y, vx:0, vy:0, r:f.size*(f.boss?2.6:1.6), life:.18, max:.18, c:'#ffffff' });
+  for (let i=0;i<(f.boss?26:big?14:8);i++){
+    const a=Math.random()*6.28, sp=rand(160, f.boss?620:360);
+    particles.push({ x:f.x, y:f.y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
+      r:rand(1,2.4), life:rand(.25,.5), max:.5, c:f.glow, grav:120 });
+  }
+  rings.push({ x:f.x, y:f.y, r:f.size*0.4, max:f.size*(f.boss?9:5), life:.7, c:'#ffffff' });
+  shake = Math.min(shake + (f.boss?18:f.size>30?8:3), 24);
+  if (big){ flash = f.boss?0.55:0.38; flashColor = f.glow; hitStop = f.boss?0.09:0.05; }
 
   fish.splice(fish.indexOf(f), 1);
   updateHUD();
@@ -910,6 +919,16 @@ function render(time){
   const vg = ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.85);
   vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.55)');
   ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+
+  if (phase==='playing' && combo >= 3){
+    const pulse = 0.5 + 0.5*Math.sin(performance.now()*0.006);
+    const col = combo>=6 ? '255,206,99' : '40,224,200';
+    const cg = ctx.createRadialGradient(W/2,H/2,H*0.42,W/2,H/2,H*0.95);
+    cg.addColorStop(0,'rgba(0,0,0,0)');
+    cg.addColorStop(1,`rgba(${col},${(0.10+combo*0.02)*(0.6+0.4*pulse)})`);
+    ctx.fillStyle=cg; ctx.fillRect(0,0,W,H);
+  }
+
   if (flash > 0){
     ctx.globalAlpha = flash*0.5; ctx.fillStyle = flashColor;
     ctx.fillRect(0,0,W,H); ctx.globalAlpha = 1;
@@ -923,7 +942,7 @@ function loop(now){
   last = now;
   if (phase === 'boot')        updateBoot(dt);
   else if (phase === 'dive')   updateDive(dt);
-  else if (phase === 'playing' && running) update(dt);
+  else if (phase === 'playing' && running){ if (hitStop > 0) hitStop -= dt; else update(dt); }
   else                         updateAmbient(dt);   // menu / over
   render(now);
   requestAnimationFrame(loop);
