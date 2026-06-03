@@ -49,6 +49,7 @@ const COMBO_WINDOW = 2.6;     // seconds to keep the combo alive
 // hp, value(points), size(radius-ish), speed(px/s), color, glow
 const FISH_TYPES = {
   minnow : { hp:1,  value:5,   size:16, speed:170, color:'#39e6c4', glow:'#aef9ec', weight:38, coins:1 },
+  fry    : { hp:1,  value:3,   size:11, speed:215, color:'#7fe0d0', glow:'#cffaf0', weight:24, coins:1, spriteFrom:'minnow' },
   darter : { hp:2,  value:12,  size:22, speed:135, color:'#4aa8ff', glow:'#bfe2ff', weight:28, coins:2 },
   ray    : { hp:4,  value:30,  size:34, speed:88,  color:'#b07bff', glow:'#e4d2ff', weight:18, coins:5 },
   angler : { hp:6,  value:70,  size:30, speed:110, color:'#ff7a59', glow:'#ffd2b0', weight:9,  coins:11, hunter:true },
@@ -61,6 +62,7 @@ const TOTAL_WEIGHT = TYPE_KEYS.reduce((s,k)=>s+FISH_TYPES[k].weight,0);
 
 // optional ludo.ai fish art: assets/fish-<key>.png auto-loads into each type
 TYPE_KEYS.forEach(k => {
+  if (FISH_TYPES[k].spriteFrom) return;
   const img = new Image();
   img.onload = () => { FISH_TYPES[k].sprite = img; };
   img.src = `assets/fish-${k}.png`;
@@ -328,11 +330,11 @@ function spawnFish(forceSchool){
   let dx=aimX-x, dy=aimY-y; const len=Math.hypot(dx,dy)||1;
   const sp = t.speed * srange(0.85,1.15);
   const vx=dx/len*sp, vy=dy/len*sp;
-  const f = { key, ...t, maxHp:t.hp, x, y, vx, vy, baseY:y,
+  const f = { key, ...t, maxHp:t.hp, size: t.size*srange(0.82,1.22), x, y, vx, vy, baseY:y,
     freq:srange(0.6,1.6), phase:srand()*6.28, t:0, wig:srand()*6.28, hitFlash:0 };
   fish.push(f);
-  if (forceSchool && (key==='minnow'||key==='darter')){
-    const n = key==='minnow'?5:3, ux=vx/sp, uy=vy/sp;
+  if (forceSchool && (key==='minnow'||key==='darter'||key==='fry')){
+    const n = key==='fry'?8:key==='minnow'?5:3, ux=vx/sp, uy=vy/sp;
     for (let i=1;i<=n;i++){
       fish.push({ ...f, x:x-ux*i*t.size*2.4, y:y-uy*i*t.size*2.4, phase:srand()*6.28, wig:srand()*6.28 });
     }
@@ -680,12 +682,13 @@ function update(dt){
   // spawn cadence ramps up over time
   spawnTimer -= dt;
   const frac = mode==='tournament' ? 1-(timeLeft/ROUND_TIME) : Math.min(elapsed/90,1);
-  const interval = clamp(1.05 - frac*0.6, 0.42, 1.05);
+  const interval = clamp(0.66 - frac*0.4, 0.26, 0.66);
   if (spawnTimer <= 0){
-    spawnFish(srand() < 0.4);
+    spawnFish(srand() < 0.45);
+    if (srand() < 0.4) spawnFish(srand() < 0.3);
     spawnTimer = interval * srange(0.7,1.3);
   }
-  if (fish.length < 4) spawnFish(srand()<0.5); // keep the sea alive
+  if (fish.length < 9) spawnFish(srand()<0.5); // keep the sea busy
   puTimer -= dt;
   if (puTimer <= 0){ spawnPowerup(); puTimer = srange(9, 15); }
   for (const pu of powerups){ pu.t += dt; pu.x += pu.vx*dt; pu.y = pu.baseY + Math.sin(pu.t*1.5 + pu.phase)*14;
@@ -916,10 +919,11 @@ function drawFish(f){
   const s = f.size;
 
   // ── sprite hook (ludo.ai): use bitmap if provided ──
-  const spr = (FISH_TYPES[f.key] && FISH_TYPES[f.key].sprite) || (f.jackpot && FISH_TYPES.golden ? FISH_TYPES.golden.sprite : null);
+  const _sk = f.spriteFrom || f.key;
+  const spr = (FISH_TYPES[_sk] && FISH_TYPES[_sk].sprite) || (f.jackpot && FISH_TYPES.golden ? FISH_TYPES.golden.sprite : null);
   if (spr && spr.complete){
     const _ox=-s*1.9, _oy=-s*1.2, _dw=s*3.8, _dh=s*2.4;
-    const _N=16, _sw=spr.naturalWidth||spr.width, _sh=spr.naturalHeight||spr.height;
+    const _N=(f.size>28?14:f.size>18?10:7), _sw=spr.naturalWidth||spr.width, _sh=spr.naturalHeight||spr.height;
     const _ss=_sw/_N, _sd=_dw/_N, _sp=f.wig;
     ctx.shadowColor = f.glow; ctx.shadowBlur = f.shiny||f.boss ? 20 : 13;
     for (let _i=0;_i<_N;_i++){
