@@ -147,8 +147,54 @@ sceneImg.src = 'assets/scene.png';
 
 // optional ludo.ai cannon turret (assets/cannon.png) — barrel pointing UP
 const cannonImg = new Image(); let cannonReady = false;
-cannonImg.onload = () => { cannonReady = true; };
+cannonImg.onload = () => { cannonReady = true; makeTintedCannons(); };
 cannonImg.src = 'assets/cannon.png';
+
+// ===== CANNON SKINS =====
+const SKINS = [
+  { id:0, name:'STANDARD', file:'assets/cannon.png',   bullet:'#7ff0dd', cost:0,    tint:null },
+  { id:1, name:'GOLD',     file:'assets/cannon-2.png', bullet:'#ffce63', cost:250,  tint:'#ffce63' },
+  { id:2, name:'CRIMSON',  file:'assets/cannon-3.png', bullet:'#ff5d6c', cost:500,  tint:'#ff5d6c' },
+  { id:3, name:'VIOLET',   file:'assets/cannon-4.png', bullet:'#b07bff', cost:850,  tint:'#b07bff' },
+  { id:4, name:'EMERALD',  file:'assets/cannon-5.png', bullet:'#39e6c4', cost:1200, tint:'#39e6c4' },
+];
+let skinId = parseInt(localStorage.getItem('fishhunter_skin')||'0',10) || 0;
+SKINS.forEach(sk => { sk.img=null; sk.tintImg=null; if(sk.id===0) return; const im=new Image(); im.onload=()=>{ sk.img=im; }; im.src=sk.file; });
+function makeTintedCannons(){
+  if (!cannonReady) return;
+  for (const sk of SKINS){
+    if (!sk.tint){ sk.tintImg = cannonImg; continue; }
+    const oc=document.createElement('canvas'); oc.width=cannonImg.naturalWidth; oc.height=cannonImg.naturalHeight;
+    const x=oc.getContext('2d');
+    x.drawImage(cannonImg,0,0);
+    x.globalCompositeOperation='color'; x.fillStyle=sk.tint; x.fillRect(0,0,oc.width,oc.height);
+    x.globalCompositeOperation='destination-in'; x.drawImage(cannonImg,0,0);
+    sk.tintImg = oc;
+  }
+}
+function currentCannonImg(){ const sk=SKINS[skinId]||SKINS[0]; if (sk.img&&sk.img.complete&&sk.img.naturalWidth) return sk.img; if (sk.tintImg) return sk.tintImg; return cannonReady?cannonImg:null; }
+function currentBulletColor(){ return (SKINS[skinId]||SKINS[0]).bullet; }
+function shopOwned(){ try{ return new Set(JSON.parse(localStorage.getItem('fishhunter_skins_owned')||'[0]')); }catch(e){ return new Set([0]); } }
+function shopAvail(){ return Math.max(0, ls(K.coins) - ls('fishhunter_spent')); }
+function renderShop(){
+  const grid=document.getElementById('shop-grid'); if(!grid) return;
+  const wEl=document.getElementById('shop-wallet'); if(wEl) wEl.textContent=formatNum(shopAvail());
+  const owned=shopOwned(); grid.innerHTML='';
+  SKINS.forEach(sk=>{
+    const cell=document.createElement('div'); cell.className='shop-cell'+(sk.id===skinId?' sel':'');
+    const cv=document.createElement('canvas'); cv.width=cv.height=72; cv.className='shop-prev'; const xx=cv.getContext('2d');
+    const img=(sk.img&&sk.img.complete&&sk.img.naturalWidth)?sk.img:(sk.tintImg||(cannonReady?cannonImg:null));
+    if(img){ const r=(img.width/img.height)||0.75; let w,h; if(r>1){w=66;h=66/r;}else{h=66;w=66*r;} xx.drawImage(img,(72-w)/2,(72-h)/2,w,h); }
+    cell.appendChild(cv);
+    const nm=document.createElement('div'); nm.className='shop-nm'; nm.style.color=sk.tint||'#28e0c8'; nm.textContent=sk.name; cell.appendChild(nm);
+    const btn=document.createElement('button'); btn.className='shop-btn';
+    if(sk.id===skinId){ btn.textContent='SELECTED'; btn.disabled=true; }
+    else if(owned.has(sk.id)){ btn.textContent='SELECT'; btn.onclick=()=>{ skinId=sk.id; localStorage.setItem('fishhunter_skin',String(sk.id)); renderShop(); }; }
+    else if(shopAvail()>=sk.cost){ btn.textContent='BUY '+sk.cost; btn.onclick=()=>{ localStorage.setItem('fishhunter_spent',String(ls('fishhunter_spent')+sk.cost)); owned.add(sk.id); localStorage.setItem('fishhunter_skins_owned',JSON.stringify([...owned])); skinId=sk.id; localStorage.setItem('fishhunter_skin',String(sk.id)); try{initAudio();sfxJackpot();}catch(e){} renderShop(); }; }
+    else { btn.textContent='LOCKED '+sk.cost; btn.disabled=true; btn.classList.add('locked'); }
+    cell.appendChild(btn); grid.appendChild(cell);
+  });
+}
 
 // ════════════════════════════════════════════════════════════════
 //  SOUND — procedural Web Audio (no files)
@@ -301,7 +347,7 @@ function tryFire(){
     bullets.push({
       x:muzzleX, y:muzzleY,
       vx:Math.cos(a+off)*speed, vy:Math.sin(a+off)*speed,
-      dmg: wpnLevel, r: 4+wpnLevel, life: 1.4, trail: [],
+      dmg: wpnLevel, r: 4+wpnLevel, life: 1.4, trail: [], color: currentBulletColor(),
     });
   }
   // muzzle flash particles
@@ -1053,12 +1099,13 @@ function drawCannon(){
   }
 
   // ── ludo.ai cannon sprite: barrel (up in image) rotated to aim ──
-  if (cannonReady){
+  const _cimg = currentCannonImg();
+  if (_cimg){
     ctx.save();
-    ctx.translate(cannon.x, cannon.y);           // pivot = joint
-    ctx.rotate(a + Math.PI/2);                    // barrel points exactly along the shot
+    ctx.translate(cannon.x, cannon.y);
+    ctx.rotate(a + Math.PI/2);
     ctx.shadowColor = '#28e0c8'; ctx.shadowBlur = 14;
-    ctx.drawImage(cannonImg, -CN_TW/2, -CN_JOINT*CN_TH, CN_TW, CN_TH);
+    ctx.drawImage(_cimg, -CN_TW/2, -CN_JOINT*CN_TH, CN_TW, CN_TH);
     ctx.restore();
     return;
   }
@@ -1186,13 +1233,13 @@ function render(time){
   for (const b of bullets){
     for (let i=0;i<b.trail.length;i++){
       const tpt=b.trail[i], al=i/b.trail.length*0.5;
-      ctx.globalAlpha=al; ctx.fillStyle='#aef9ec';
+      ctx.globalAlpha=al; ctx.fillStyle=b.color||'#aef9ec';
       ctx.beginPath(); ctx.arc(tpt.x,tpt.y,b.r*0.7,0,6.28); ctx.fill();
     }
     ctx.globalAlpha=1;
-    ctx.shadowColor='#aef9ec'; ctx.shadowBlur=14;
+    ctx.shadowColor=b.color||'#aef9ec'; ctx.shadowBlur=14;
     const bgr=ctx.createRadialGradient(b.x,b.y,1,b.x,b.y,b.r*1.6);
-    bgr.addColorStop(0,'#ffffff'); bgr.addColorStop(0.5,'#7ff0dd'); bgr.addColorStop(1,'rgba(40,224,200,0)');
+    bgr.addColorStop(0,'#ffffff'); bgr.addColorStop(0.5,b.color||'#7ff0dd'); bgr.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=bgr;
     ctx.beginPath(); ctx.arc(b.x,b.y,b.r*1.6,0,6.28); ctx.fill();
   }
@@ -1388,7 +1435,8 @@ document.getElementById('btn-start').onclick = startGame;
 const _sm = document.getElementById('soon-msg');
 function showSoon(w){ if(_sm){ _sm.textContent = w + ' - coming soon'; _sm.classList.add('show'); clearTimeout(showSoon._t); showSoon._t=setTimeout(()=>_sm.classList.remove('show'),1900); } }
 { const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>showSoon('Multiplayer'); }
-{ const b=document.getElementById('btn-shop'); if(b) b.onclick=()=>showSoon('Shop'); }
+{ const b=document.getElementById('btn-shop'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-shop'); if(o){ o.classList.remove('hidden'); renderShop(); } }; }
+{ const b=document.getElementById('shop-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-shop'); if(o) o.classList.add('hidden'); }; }
 document.getElementById('btn-again').onclick = () => { startGame(); };
 document.getElementById('exit-btn').onclick = exitToMenu;
 document.getElementById('mute-btn').onclick = toggleMute;
