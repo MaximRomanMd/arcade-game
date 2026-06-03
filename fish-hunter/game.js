@@ -436,6 +436,8 @@ function updateFx(dt){
   for (const w of waves) w.life -= dt;
   waves = waves.filter(w => w.life > 0);
   if (zoomPunch > 0) zoomPunch = Math.max(0, zoomPunch - dt*1.4);
+  if (shake > 0) shake = Math.max(0, shake - dt*40);
+  if (flash > 0) flash = Math.max(0, flash - dt*1.4);
 }
 function coinPop(){
   const el = document.getElementById('hud-credits');
@@ -571,7 +573,7 @@ function renderMenu(){
 }
 
 function revealMenu(){
-  phase = 'menu';
+  phase = 'menu'; shake = 0; flash = 0; zoomPunch = 0;
   const boot = document.getElementById('overlay-boot');
   boot.classList.add('fade');
   diveStreaks = [];
@@ -668,8 +670,7 @@ function update(dt){
     if (bu.y < -10){ bu.y = H+10; bu.x = Math.random()*W; }
   }
 
-  if (shake > 0) shake = Math.max(0, shake - dt*40);
-  if (flash > 0) flash = Math.max(0, flash - dt*1.4);
+  // shake & flash decay handled in updateFx (runs every phase)
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1020,7 +1021,7 @@ function render(time){
 
   // vignette + impact flash (screen-space, no shake)
   const vg = ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.85);
-  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.55)');
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1, phase==='playing' ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.26)');
   ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
 
   if (phase==='playing' && combo >= 3){
