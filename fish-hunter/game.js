@@ -121,7 +121,7 @@ const LOAD_MSGS = [
 ];
 let cannonSway = 0;              // gentle barrel motion on menu/splash
 let diveT = 0;                   // dive transition timer
-const DIVE_DUR = 1.9;           // seconds of the plunge
+const DIVE_DUR = 2.3;           // seconds of the plunge
 let diveStreaks = [];
 let descent = 0;            // fast rising bubbles during the dive
 
@@ -566,7 +566,7 @@ function startDive(){
 }
 function updateDive(dt){
   diveT += dt;
-  { const p = clamp(diveT/DIVE_DUR,0,1); descent = p*p; }
+  { const p = clamp(diveT/DIVE_DUR,0,1); descent = p<0.5 ? 4*p*p*p : 1-Math.pow(-2*p+2,3)/2; }
   updateAmbient(dt);
   for (const s of diveStreaks){
     s.y -= s.spd*dt; s.x += s.wob*dt;
@@ -991,15 +991,28 @@ function render(time){
 
   drawBackground(time);
 
-  // dive bubble curtain
-  if (phase === 'dive' && diveStreaks.length){
+  // cinematic descent: rising bubbles + water speed-lines + pressure vignette
+  if (phase === 'dive'){
+    const dp = clamp(diveT/DIVE_DUR,0,1);
     ctx.save(); ctx.globalCompositeOperation='lighter';
     for (const s of diveStreaks){
       ctx.globalAlpha = 0.5;
       ctx.fillStyle = '#bdfaf0';
-      ctx.beginPath(); ctx.ellipse(s.x, s.y, s.r*0.6, s.r*1.8, 0, 0, 6.28); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s.x, s.y, s.r*0.6, s.r*(1.8+dp*2.5), 0, 0, 6.28); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = `rgba(195,247,255,${0.08+dp*0.18})`; ctx.lineWidth = 2;
+    for (let i=0;i<24;i++){
+      const lx = (i*53 + time*0.04) % W;
+      const ly = (((i*131 - time*(0.6+dp*1.6)) % (H+220)) + (H+220)) % (H+220) - 110;
+      const len = 26 + dp*150;
+      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx, ly+len); ctx.stroke();
     }
     ctx.restore(); ctx.globalAlpha = 1;
+    const pv = ctx.createRadialGradient(W/2,H/2,H*(0.5-dp*0.32),W/2,H/2,H*0.92);
+    pv.addColorStop(0,'rgba(0,0,0,0)');
+    pv.addColorStop(1,`rgba(0,8,16,${0.28+dp*0.45})`);
+    ctx.fillStyle = pv; ctx.fillRect(0,0,W,H);
   }
 
   // rings (shockwaves)
