@@ -311,3 +311,8 @@ body.playing #weapon-bar{display:flex;}
   transform:skewX(-20deg);animation:shine 3.4s ease-in-out infinite;pointer-events:none;}
 .lobby-panel{transition:transform .15s,border-color .15s;}
 .lobby-panel:hover{transform:translateY(-2px);border-color:rgba(40,224,200,.4);}
+
+/* coins-to-HUD pop */
+#hud-credits{display:inline-block;}
+.coin-pop{animation:coinPop .32s ease;}
+@keyframes coinPop{0%{transform:scale(1);}40%{transform:scale(1.28);filter:brightness(1.7);}100%{transform:scale(1);}}

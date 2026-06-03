@@ -89,6 +89,9 @@ let score = 0, timeLeft = ROUND_TIME, shake = 0, flash = 0, flashColor = '#28e0c
 let combo = 1, comboTimer = 0, comboKills = 0;
 let spawnTimer = 0, elapsed = 0;
 let hitStop = 0;
+let coinsFx = [];
+let waves = [];
+let zoomPunch = 0, zx = 0, zy = 0;
 let stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
 const cannon = { x: W/2, y: H, len: 46 };
 // cannon sprite geometry (measured from cannon.png): joint at 66% down, ratio 0.756
@@ -392,9 +395,38 @@ function killFish(f){
   rings.push({ x:f.x, y:f.y, r:f.size*0.4, max:f.size*(f.boss?9:5), life:.7, c:'#ffffff' });
   shake = Math.min(shake + (f.boss?18:f.size>30?8:3), 24);
   if (big){ flash = f.boss?0.55:0.38; flashColor = f.glow; hitStop = f.boss?0.09:0.05; }
+  spawnCoinFx(f.x, f.y, Math.min(f.coins, f.boss?16:6));
+  if (big){ waves.push({x:f.x,y:f.y,r:f.size*0.5,max:f.size*(f.boss?11:6),life:.55,maxLife:.55}); }
+  if (f.boss){ zoomPunch = 0.28; zx = f.x; zy = f.y; }
 
   fish.splice(fish.indexOf(f), 1);
   updateHUD();
+}
+
+function spawnCoinFx(x,y,n){
+  const el = document.getElementById('hud-credits');
+  let tx = W*0.13, ty = 46;
+  if (el){ const r = el.getBoundingClientRect(); tx = r.left + r.width/2; ty = r.top + r.height/2; }
+  for (let i=0;i<n;i++)
+    coinsFx.push({ x:x+rand(-12,12), y:y+rand(-12,12), tx, ty, vx:rand(-50,50), vy:rand(-140,-40), t:0, delay:i*0.035 });
+}
+function updateFx(dt){
+  for (const c of coinsFx){
+    if (c.delay>0){ c.delay-=dt; continue; }
+    c.t += dt;
+    const pull = Math.min(1, dt*(4 + c.t*9));
+    c.x += (c.tx-c.x)*pull + c.vx*dt; c.y += (c.ty-c.y)*pull + c.vy*dt;
+    c.vx *= 0.9; c.vy *= 0.9;
+    if (Math.hypot(c.tx-c.x, c.ty-c.y) < 16){ c._done = true; coinPop(); }
+  }
+  coinsFx = coinsFx.filter(c => !c._done);
+  for (const w of waves) w.life -= dt;
+  waves = waves.filter(w => w.life > 0);
+  if (zoomPunch > 0) zoomPunch = Math.max(0, zoomPunch - dt*1.4);
+}
+function coinPop(){
+  const el = document.getElementById('hud-credits');
+  if (el){ el.classList.remove('coin-pop'); void el.offsetWidth; el.classList.add('coin-pop'); }
 }
 
 function labelFor(k){
@@ -659,21 +691,27 @@ function drawBackground(time){
   }
   ctx.restore();
 
-  // seabed silhouette + swaying kelp
+  // seabed + far parallax ridge + livelier kelp
   if (!sceneReady){
     ctx.save();
+    ctx.fillStyle = 'rgba(3,16,26,0.7)';
+    ctx.beginPath(); ctx.moveTo(0,H);
+    for (let x=0;x<=W;x+=60) ctx.lineTo(x, H-72 - Math.sin(x*0.006 + ts*0.12)*26);
+    ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#020a10';
-    ctx.beginPath();
-    ctx.moveTo(0,H);
+    ctx.beginPath(); ctx.moveTo(0,H);
     for (let x=0;x<=W;x+=40) ctx.lineTo(x, H-26 - Math.sin(x*0.01+ts*0.2)*10 - 14);
     ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(20,90,80,.5)'; ctx.lineWidth = 6; ctx.lineCap='round';
-    for (let k=0;k<7;k++){
-      const kx = (W/7)*k + 30;
+    ctx.strokeStyle = 'rgba(24,110,95,.55)'; ctx.lineCap='round';
+    const KN = 12;
+    for (let k=0;k<KN;k++){
+      const kx = (W/KN)*k + 24, h1 = 80 + (k%4)*34, sway = Math.sin(ts*0.8 + k)*22;
+      ctx.lineWidth = 5;
       ctx.beginPath(); ctx.moveTo(kx, H);
-      const h1 = 70+ (k%3)*30;
-      ctx.quadraticCurveTo(kx + Math.sin(ts*0.8+k)*20, H-h1*0.6,
-                           kx + Math.sin(ts*0.8+k)*34, H-h1);
+      ctx.quadraticCurveTo(kx + sway*0.5, H-h1*0.55, kx + sway, H-h1); ctx.stroke();
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(kx + sway, H-h1);
+      ctx.quadraticCurveTo(kx + sway + Math.sin(ts+k)*12, H-h1-18, kx + sway + Math.sin(ts+k)*4, H-h1-30);
       ctx.stroke();
     }
     ctx.restore();
@@ -850,6 +888,11 @@ function render(time){
     ctx.translate(W/2, H*0.62); ctx.scale(z,z); ctx.translate(-W/2,-H*0.62);
   }
 
+  if (zoomPunch > 0){
+    const z2 = 1 + zoomPunch*0.5;
+    ctx.translate(zx, zy); ctx.scale(z2,z2); ctx.translate(-zx,-zy);
+  }
+
   drawBackground(time);
 
   // dive bubble curtain
@@ -871,6 +914,17 @@ function render(time){
     ctx.beginPath(); ctx.arc(r.x,r.y,r.r,0,6.28); ctx.stroke();
   }
   ctx.restore();
+  if (waves.length){
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    for (const w of waves){
+      const k = 1 - w.life/w.maxLife, rad = w.r + (w.max - w.r)*k, a = w.life/w.maxLife;
+      ctx.globalAlpha = a*0.6; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(190,240,255,0.9)';
+      ctx.beginPath(); ctx.arc(w.x,w.y,rad,0,6.28); ctx.stroke();
+      ctx.globalAlpha = a*0.22; ctx.lineWidth = 10; ctx.strokeStyle = 'rgba(120,210,240,0.8)';
+      ctx.beginPath(); ctx.arc(w.x,w.y,rad*0.94,0,6.28); ctx.stroke();
+    }
+    ctx.restore(); ctx.globalAlpha = 1;
+  }
 
   fish.forEach(drawFish);
 
@@ -933,6 +987,14 @@ function render(time){
     ctx.globalAlpha = flash*0.5; ctx.fillStyle = flashColor;
     ctx.fillRect(0,0,W,H); ctx.globalAlpha = 1;
   }
+  if (coinsFx.length){
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    for (const c of coinsFx){ if (c.delay>0) continue;
+      ctx.shadowColor='#ffce63'; ctx.shadowBlur=10; ctx.fillStyle='#ffd76b';
+      ctx.beginPath(); ctx.arc(c.x,c.y,3.2,0,6.28); ctx.fill();
+    }
+    ctx.restore();
+  }
 }
 
 // ── loop ─────────────────────────────────────────────────────────
@@ -944,6 +1006,7 @@ function loop(now){
   else if (phase === 'dive')   updateDive(dt);
   else if (phase === 'playing' && running){ if (hitStop > 0) hitStop -= dt; else update(dt); }
   else                         updateAmbient(dt);   // menu / over
+  updateFx(dt);
   render(now);
   requestAnimationFrame(loop);
 }
