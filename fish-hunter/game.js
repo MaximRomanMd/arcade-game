@@ -69,7 +69,7 @@ TYPE_KEYS.forEach(k => {
   if (FISH_TYPES[k].spriteFrom) return;
   const img = new Image();
   img.onload = () => { FISH_TYPES[k].sprite = img; };
-  img.src = `assets/fish-${k}.png?v=5`;
+  img.src = `assets/fish-${k}.png?t=${Date.now()}`;
 });
 
 function pickType(elapsedFrac){
