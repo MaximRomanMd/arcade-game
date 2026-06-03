@@ -366,7 +366,7 @@ function killFish(f){
   addKillCombo();
 
   // explosion particles
-  const n = f.boss ? 60 : f.size > 30 ? 34 : 18;
+  const n = f.boss ? 60 : f.value>=70 ? 42 : f.value>=30 ? 30 : 18;
   for (let i=0;i<n;i++){
     const a = Math.random()*6.28, sp = rand(40, f.boss?420:240);
     particles.push({ x:f.x, y:f.y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
@@ -383,9 +383,9 @@ function killFish(f){
   rings.push({ x:f.x, y:f.y, r:f.size, max:f.size*(f.boss?6:3.4), life:.5, c:f.glow });
   // score popup
   pops.push({ x:f.x, y:f.y, txt:'+'+gained, life:.9, max:.9,
-    c: combo>1 ? '#ffce63' : '#aef9ec', big:f.boss||f.shiny });
+    c: combo>1 ? '#ffce63' : '#aef9ec', big:f.boss||f.shiny||f.value>=70 });
   // extra juice: core flash, shards, second shockwave
-  const big = f.boss || f.shiny || f.size > 30;
+  const big = f.boss || f.value >= 30;
   particles.push({ x:f.x, y:f.y, vx:0, vy:0, r:f.size*(f.boss?2.6:1.6), life:.18, max:.18, c:'#ffffff' });
   for (let i=0;i<(f.boss?26:big?14:8);i++){
     const a=Math.random()*6.28, sp=rand(160, f.boss?620:360);
@@ -393,10 +393,10 @@ function killFish(f){
       r:rand(1,2.4), life:rand(.25,.5), max:.5, c:f.glow, grav:120 });
   }
   rings.push({ x:f.x, y:f.y, r:f.size*0.4, max:f.size*(f.boss?9:5), life:.7, c:'#ffffff' });
-  shake = Math.min(shake + (f.boss?18:f.size>30?8:3), 24);
+  shake = Math.min(shake + (f.boss?18:f.value>=70?11:f.value>=30?7:3), 24);
   if (big){ flash = f.boss?0.55:0.38; flashColor = f.glow; hitStop = f.boss?0.09:0.05; }
   spawnCoinFx(f.x, f.y, Math.min(f.coins, f.boss?16:6));
-  waves.push({x:f.x,y:f.y,r:f.size*0.4,max:f.size*(f.boss?11:big?6.5:4.4),life:big?.6:.42,maxLife:big?.6:.42});
+  waves.push({x:f.x,y:f.y,r:f.size*0.4,max:f.size*3 + f.value*2.2,life:big?.6:.42,maxLife:big?.6:.42});
   if (f.boss){ zoomPunch = 0.28; zx = f.x; zy = f.y; }
 
   fish.splice(fish.indexOf(f), 1);
