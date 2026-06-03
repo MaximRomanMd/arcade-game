@@ -340,7 +340,7 @@ function tryFire(){
   const muzzleY = cannon.y + Math.sin(a)*bl;
   const speed = 720 + wpnLevel*40;
   // higher levels fire a tight spread of pellets
-  let pellets = wpnLevel >= 4 ? 3 : wpnLevel >= 2 ? 2 : 1;
+  let pellets = wpnLevel;
   if (multiT > 0) pellets = Math.max(pellets, 5);
   const spread  = pellets > 1 ? (multiT>0?0.12:0.06) : 0;
   for (let i=0;i<pellets;i++){
