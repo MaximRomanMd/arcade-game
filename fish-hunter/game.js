@@ -1365,7 +1365,7 @@ requestAnimationFrame(loop);
 // ── start / end ──────────────────────────────────────────────────
 function startGame(){
   fish=[]; bullets=[]; particles=[]; pops=[]; rings=[];
-  score=0; credits=START_CREDITS; creditsShown=START_CREDITS; timeLeft=ROUND_TIME;
+  score=0; credits=(mode==='free'?100000:START_CREDITS); creditsShown=credits; timeLeft=ROUND_TIME;
   combo=1; comboKills=0; comboTimer=0; spawnTimer=0; elapsed=0;
   shake=0; flash=0; wpnLevel=1; firing=false;
   stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
