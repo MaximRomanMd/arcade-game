@@ -70,7 +70,7 @@ function pickType(elapsedFrac){
   let roll = srand() * TOTAL_WEIGHT;
   for (const k of TYPE_KEYS){
     let w = FISH_TYPES[k].weight;
-    if (elapsedFrac > 0.5 && FISH_TYPES[k].value >= 30) w *= 1.35;
+    if (elapsedFrac > 0.25 && FISH_TYPES[k].value >= 30) w *= 1.55;
     roll -= w;
     if (roll <= 0) return k;
   }
@@ -396,7 +396,7 @@ function killFish(f){
   shake = Math.min(shake + (f.boss?18:f.size>30?8:3), 24);
   if (big){ flash = f.boss?0.55:0.38; flashColor = f.glow; hitStop = f.boss?0.09:0.05; }
   spawnCoinFx(f.x, f.y, Math.min(f.coins, f.boss?16:6));
-  if (big){ waves.push({x:f.x,y:f.y,r:f.size*0.5,max:f.size*(f.boss?11:6),life:.55,maxLife:.55}); }
+  waves.push({x:f.x,y:f.y,r:f.size*0.4,max:f.size*(f.boss?11:big?6.5:4.4),life:big?.6:.42,maxLife:big?.6:.42});
   if (f.boss){ zoomPunch = 0.28; zx = f.x; zy = f.y; }
 
   fish.splice(fish.indexOf(f), 1);
@@ -918,10 +918,10 @@ function render(time){
     ctx.save(); ctx.globalCompositeOperation='lighter';
     for (const w of waves){
       const k = 1 - w.life/w.maxLife, rad = w.r + (w.max - w.r)*k, a = w.life/w.maxLife;
-      ctx.globalAlpha = a*0.6; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(190,240,255,0.9)';
+      ctx.globalAlpha = a*0.9; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(205,248,255,1)';
       ctx.beginPath(); ctx.arc(w.x,w.y,rad,0,6.28); ctx.stroke();
-      ctx.globalAlpha = a*0.22; ctx.lineWidth = 10; ctx.strokeStyle = 'rgba(120,210,240,0.8)';
-      ctx.beginPath(); ctx.arc(w.x,w.y,rad*0.94,0,6.28); ctx.stroke();
+      ctx.globalAlpha = a*0.4; ctx.lineWidth = 15; ctx.strokeStyle = 'rgba(130,215,245,0.95)';
+      ctx.beginPath(); ctx.arc(w.x,w.y,rad*0.92,0,6.28); ctx.stroke();
     }
     ctx.restore(); ctx.globalAlpha = 1;
   }
