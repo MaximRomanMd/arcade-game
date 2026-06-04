@@ -917,16 +917,56 @@ function spawnBgFish(){
 }
 function spawnLurker(){
   const fromLeft = Math.random()<0.5;
-  lurker = { x: fromLeft? W*0.2 : W*0.8, y: rand(H*0.5, H*0.78), vx:(fromLeft?1:-1)*rand(12,22),
-    dir:fromLeft?1:-1, size:rand(150,215), t:0, dur:rand(8,12) };
+  lurker = { x: fromLeft? -W*0.35 : W*1.35, y: rand(H*0.28, H*0.58), vx:(fromLeft?1:-1)*rand(30,46),
+    dir:fromLeft?1:-1, size:rand(250,350), t:0, phase:Math.random()*6.28 };
 }
 function updateBgLife(dt){
   if (descent < 0.99) return;
   for (const f of bgFish){ f.t+=dt; f.x+=f.vx*dt; f.y = f.baseY + Math.sin(f.t*f.freq+f.phase)*f.amp; }
   bgFish = bgFish.filter(f => f.x>-70 && f.x<W+70);
   while (bgFish.length < 5) spawnBgFish();
-  if (lurker){ lurker.t+=dt; lurker.x+=lurker.vx*dt; if (lurker.t>lurker.dur) lurker=null; }
-  else { lurkerTimer-=dt; if (lurkerTimer<=0){ spawnLurker(); lurkerTimer = rand(26,46); } }
+  if (lurker){ lurker.t+=dt; lurker.x+=lurker.vx*dt; if (lurker.x < -W*0.5 || lurker.x > W*1.5) lurker=null; }
+  else { lurkerTimer-=dt; if (lurkerTimer<=0){ spawnLurker(); lurkerTimer = rand(16,30); } }
+}
+function drawLurker(L){
+  const s=L.size, ts=L.t;
+  const edge = clamp(Math.min(L.x + W*0.3, W*1.3 - L.x)/(W*0.35), 0, 1);
+  if (edge<=0) return;
+  ctx.save(); ctx.translate(L.x, L.y); if (L.dir<0) ctx.scale(-1,1);
+  // murky halo
+  ctx.globalAlpha = 0.26*edge;
+  const halo = ctx.createRadialGradient(-s*0.4,0,s*0.2,-s*0.4,0,s*2.1);
+  halo.addColorStop(0,'rgba(0,3,8,0.7)'); halo.addColorStop(1,'rgba(0,3,8,0)');
+  ctx.fillStyle=halo; ctx.beginPath(); ctx.ellipse(-s*0.4,0,s*2.1,s*0.85,0,0,6.28); ctx.fill();
+  // undulating serpent body (head at +x, tail at -x)
+  const N=16, P=[];
+  for (let i=0;i<=N;i++){
+    const u=i/N;
+    const x=(1.05 - u*2.8)*s;
+    const yo=Math.sin(ts*1.1 - u*5.0 + L.phase)*s*0.12*u;
+    const half=Math.max(2,(0.30*Math.sin(u*Math.PI*0.95)+0.05)*s*(1-u*0.55));
+    P.push([x,yo,half]);
+  }
+  ctx.globalAlpha=0.44*edge; ctx.fillStyle='rgba(1,4,10,1)';
+  ctx.beginPath(); ctx.moveTo(P[0][0],P[0][1]-P[0][2]);
+  for (let i=0;i<P.length;i++) ctx.lineTo(P[i][0],P[i][1]-P[i][2]);
+  for (let i=P.length-1;i>=0;i--) ctx.lineTo(P[i][0],P[i][1]+P[i][2]);
+  ctx.closePath(); ctx.fill();
+  // dorsal spikes
+  ctx.beginPath();
+  for (let i=2;i<N-3;i+=2){ const p=P[i]; ctx.moveTo(p[0]+s*0.04,p[1]-p[2]); ctx.lineTo(p[0]+s*0.10,p[1]-p[2]-s*0.18); ctx.lineTo(p[0]-s*0.06,p[1]-p[2]); }
+  ctx.fill();
+  // tail fin
+  const tl=P[N];
+  ctx.beginPath(); ctx.moveTo(tl[0],tl[1]); ctx.lineTo(tl[0]-s*0.36,tl[1]-s*0.32); ctx.lineTo(tl[0]-s*0.18,tl[1]); ctx.lineTo(tl[0]-s*0.36,tl[1]+s*0.32); ctx.closePath(); ctx.fill();
+  // glowing red eyes
+  const breathe=0.6+0.4*Math.sin(ts*3+L.phase);
+  ctx.globalAlpha=0.92*edge; ctx.shadowColor='#ff1414'; ctx.shadowBlur=26; ctx.fillStyle='#ff2e2e';
+  const er=s*0.05+breathe*2.5;
+  ctx.beginPath(); ctx.arc(s*0.80,-s*0.05,er,0,6.28); ctx.fill();
+  ctx.beginPath(); ctx.arc(s*0.64,-s*0.02,er*0.66,0,6.28); ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.restore();
 }
 function drawBgLife(){
   if (descent < 0.99) return;
@@ -937,24 +977,7 @@ function drawBgLife(){
     ctx.beginPath(); ctx.moveTo(-f.size*0.8,0); ctx.lineTo(-f.size*1.5,-f.size*0.42); ctx.lineTo(-f.size*1.5,f.size*0.42); ctx.closePath(); ctx.fill();
     ctx.restore();
   }
-  if (lurker){
-    const L=lurker;
-    const vis = Math.min(clamp(L.t/1.6,0,1), clamp((L.dur-L.t)/1.6,0,1));
-    const breathe = 0.5+0.5*Math.sin(L.t*1.1);
-    ctx.save(); ctx.translate(L.x, L.y); if (L.dir<0) ctx.scale(-1,1);
-    ctx.globalAlpha = 0.22*vis;
-    const bgg = ctx.createRadialGradient(0,0,L.size*0.25,0,0,L.size*1.5);
-    bgg.addColorStop(0,'rgba(0,2,6,1)'); bgg.addColorStop(1,'rgba(0,2,6,0)');
-    ctx.fillStyle = bgg; ctx.beginPath(); ctx.ellipse(0,0,L.size*1.4,L.size*0.72,0,0,6.28); ctx.fill();
-    ctx.globalAlpha = 0.32*vis; ctx.fillStyle='rgba(0,3,9,1)';
-    ctx.beginPath(); ctx.ellipse(0,0,L.size,L.size*0.5,0,0,6.28); ctx.fill();
-    ctx.globalAlpha = (0.78+0.22*breathe)*vis;
-    ctx.shadowColor='#ff1818'; ctx.shadowBlur=26; ctx.fillStyle='#ff3030';
-    const er = L.size*0.05 + breathe*2;
-    ctx.beginPath(); ctx.arc(L.size*0.5, -L.size*0.1, er, 0,6.28); ctx.fill();
-    ctx.beginPath(); ctx.arc(L.size*0.5 + er*3.2, -L.size*0.05, er, 0,6.28); ctx.fill();
-    ctx.restore();
-  }
+  if (lurker) drawLurker(lurker);
 }
 
 function drawKelp(bx, by, h, w, ph, ts){
@@ -998,6 +1021,17 @@ function drawWaterLife(ts, d){
     ctx.beginPath(); ctx.arc(bx-br*0.3,by-br*0.3,br*0.28,0,6.28); ctx.fill();
   }
   ctx.globalAlpha=1; ctx.restore();
+  // drifting water waves through the column
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  for (let i=0;i<5;i++){
+    const wy=H*(0.16+0.12*i);
+    ctx.globalAlpha=0.05*vis;
+    ctx.strokeStyle='rgba(150,228,238,0.6)'; ctx.lineWidth=2+i*0.4;
+    ctx.beginPath();
+    for (let x=0;x<=W;x+=26){ const yy=wy + Math.sin(x*0.011 + ts*0.85 + i*1.4)*11 + Math.sin(x*0.028 - ts*1.15)*4; x===0?ctx.moveTo(x,yy):ctx.lineTo(x,yy); }
+    ctx.stroke();
+  }
+  ctx.restore();
   // animated plants (mixed colours) swaying over the scene
   ctx.save(); ctx.globalAlpha = vis;
   const _PL = {green:algeAnim, purple:algePurple, orange:algeOrange, teal:algeTeal, coral:coralFan};
