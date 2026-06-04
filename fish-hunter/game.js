@@ -58,8 +58,8 @@ const FISH_TYPES = {
   seacat : { hp:34, value:100, size:42, speed:95,  color:'#9aa6b0', glow:'#d7e0e8', weight:6,  coins:30 },
   shark  : { hp:68, value:230, size:58, speed:135, color:'#7f93a3', glow:'#cfe0ee', weight:3,  coins:60 },
   whale  : { hp:145, value:600, size:118, speed:46, color:'#3a78d0', glow:'#a9d0ff', weight:1,  coins:130 },
-  megalodon:{ hp:544, value:2000, size:140, speed:38, color:'#5a6b7a', glow:'#cfe0ee', weight:0, coins:450, boss:true },
-  jackpot: { hp:500, value:2000,size:148, speed:58,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:300, jackpot:true },
+  megalodon:{ hp:800, value:3500, size:140, speed:36, color:'#5a6b7a', glow:'#cfe0ee', weight:0, coins:450, boss:true },
+  jackpot: { hp:600, value:2000,size:148, speed:58,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:300, jackpot:true },
 };
 const TYPE_KEYS = Object.keys(FISH_TYPES);
 const TOTAL_WEIGHT = TYPE_KEYS.reduce((s,k)=>s+FISH_TYPES[k].weight,0);
@@ -584,7 +584,7 @@ function coinPop(){
 
 function spawnMegalodon(){
   const t = FISH_TYPES.megalodon;
-  const sz = clamp(Math.min(W,H)*0.19, 150, 290);   // bigger boss
+  const sz = clamp(Math.min(W,H)*0.23, 190, 360);   // THE MEGALODON - huge & fearsome
   const fromLeft = srand()<0.5;
   const y = srange(H*0.32, H*0.6);
   fish.push({ key:'megalodon', ...t, maxHp:t.hp, size:sz,
@@ -814,6 +814,7 @@ function update(dt){
   if (spawnTimer <= 0){
     spawnFish(srand() < 0.45);
     if (srand() < 0.4) spawnFish(srand() < 0.3);
+    if (srand() < 0.005 && !fish.some(f=>f.jackpot)) spawnJackpot();   // rare jackpot ~0.5%
     spawnTimer = interval * srange(0.7,1.3);
   }
   if (fish.length < 8) spawnFish(srand()<0.5); // keep the sea busy
@@ -822,8 +823,7 @@ function update(dt){
   for (const pu of powerups){ pu.t += dt; pu.x += pu.vx*dt; pu.y = pu.baseY + Math.sin(pu.t*1.5 + pu.phase)*14;
     if (pu.x < -50 || pu.x > W+50) pu._gone = true; }
   powerups = powerups.filter(pu => !pu._gone);
-  jackpotTimer -= dt;
-  if (jackpotTimer <= 0){ spawnJackpot(); jackpotTimer = srange(40, 70); }
+  // jackpot is now a rare per-spawn chance (handled in the spawn block above)
   megTimer -= dt;
   if (megTimer <= 0){ megAlert = 1.6; megPending = true; megTimer = srange(80, 140); sfxAlert(); }
   if (megAlert > 0){ megAlert -= dt; shake = Math.max(shake, 2.5); if (megAlert <= 0 && megPending){ megPending = false; spawnMegalodon(); } }
@@ -1098,7 +1098,6 @@ function drawFish(f){
     const bw=s*3.8, bh=bw*fh/fw;            // keep frame aspect -> no distortion
     ctx.drawImage(_fa.img, cxx, cyy, fw, fh, -bw/2, -bh/2, bw, bh);
     if (f.hitFlash>0){ drawFlash(_fa.img, cxx, cyy, fw, fh, bw, bh, Math.min(0.8,f.hitFlash*6)); }
-    if (f.maxHp>3 && f.hp<f.maxHp){ const wbar=s*1.9,hpf=f.hp/f.maxHp; ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-wbar/2,-s*1.5,wbar,5); ctx.fillStyle=hpf>0.5?'#39e6c4':hpf>0.25?'#ffce63':'#ff5d6c'; ctx.fillRect(-wbar/2,-s*1.5,wbar*hpf,5); }
     ctx.restore(); return;
   }
   // ── sprite hook (ludo.ai): use bitmap if provided ──
@@ -1110,13 +1109,6 @@ function drawFish(f){
     ctx.drawImage(spr, _ox, _oy, _dw, _dh);   // static, complete sprite as-is
     // damage flash — fish turns red when hit
     if (f.hitFlash > 0){ drawFlash(spr, 0, 0, spr.width, spr.height, _dw, _dh, Math.min(0.8, f.hitFlash*6)); }
-    // hp bar for tougher fish
-    if (f.maxHp > 3 && f.hp < f.maxHp){
-      const wbar = s*1.9, hpf = f.hp/f.maxHp;
-      ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-wbar/2, -s*1.5, wbar, 5);
-      ctx.fillStyle = hpf>0.5?'#39e6c4':hpf>0.25?'#ffce63':'#ff5d6c';
-      ctx.fillRect(-wbar/2, -s*1.5, wbar*hpf, 5);
-    }
     ctx.restore(); return;
   }
 
@@ -1168,14 +1160,6 @@ function drawFish(f){
     ctx.fillStyle='#fff1c2'; ctx.shadowColor='#fff1c2'; ctx.shadowBlur=18; ctx.fill();
   }
 
-  // hp pips for tougher fish
-  if (f.maxHp > 3 && f.hp < f.maxHp){
-    ctx.shadowBlur=0;
-    const wbar = s*1.6, hpf = f.hp/f.maxHp;
-    ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(-wbar/2, -s*1.05, wbar, 4);
-    ctx.fillStyle = hpf>0.5?'#39e6c4':hpf>0.25?'#ffce63':'#ff5d6c';
-    ctx.fillRect(-wbar/2, -s*1.05, wbar*hpf, 4);
-  }
   ctx.restore();
 }
 
