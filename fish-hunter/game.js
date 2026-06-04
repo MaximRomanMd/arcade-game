@@ -185,6 +185,9 @@ logoImg.src = 'assets/logo.png';
 const sceneImg = new Image(); let sceneReady = false;
 sceneImg.onload = () => { sceneReady = true; };
 sceneImg.src = 'assets/scene.png?v=2';
+const algeAnim = new Image(); let algeReady=false;
+algeAnim.onload=()=>{ algeReady=true; };
+algeAnim.src='assets/alge-anim.png?v=1';
 
 // optional ludo.ai cannon turret (assets/cannon.png) — barrel pointing UP
 const cannonImg = new Image(); let cannonReady = false;
@@ -988,11 +991,19 @@ function drawWaterLife(ts, d){
     ctx.beginPath(); ctx.arc(bx-br*0.3,by-br*0.3,br*0.28,0,6.28); ctx.fill();
   }
   ctx.globalAlpha=1; ctx.restore();
-  // swaying foreground kelp (edges tall, center short so it never blocks play)
-  ctx.save(); ctx.globalAlpha = vis;
-  const kelps=[[W*0.05,H*0.34,18,0.2],[W*0.12,H*0.24,12,1.1],[W*0.95,H*0.36,18,2.0],[W*0.88,H*0.23,12,3.3],[W*0.33,H*0.12,10,4.0],[W*0.67,H*0.13,11,5.1]];
-  for (const k of kelps) drawKelp(k[0], H+8, k[1], k[2], k[3], ts);
-  ctx.globalAlpha=1; ctx.restore();
+  // swaying foreground kelp — real animated sprites
+  if (algeReady){
+    ctx.save(); ctx.globalAlpha = vis;
+    const cols=4, rows=4, frames=16, fw=algeAnim.width/cols, fh=algeAnim.height/rows, ar=fw/fh;
+    const KELPS=[[0.04,0.40,0],[0.12,0.27,6],[0.96,0.42,9],[0.87,0.28,3],[0.33,0.18,12],[0.70,0.20,14]];
+    for (const k of KELPS){
+      const fr=(Math.floor(ts*8 + k[2])%frames+frames)%frames;
+      const cx=(fr%cols)*fw, cy=Math.floor(fr/cols)*fh;
+      const dH=H*k[1], dW=dH*ar, dx=W*k[0]-dW/2, dy=H-dH+12;
+      ctx.drawImage(algeAnim, cx,cy,fw,fh, dx,dy,dW,dH);
+    }
+    ctx.globalAlpha=1; ctx.restore();
+  }
 }
 function drawBackground(time){
   const ts = time*0.001;
