@@ -330,26 +330,29 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => { if (e.code === 'Space') firing = false; });
 
-document.getElementById('wpn-up').onclick   = () => setWpn(wpnLevel+1);
-document.getElementById('wpn-down').onclick = () => setWpn(wpnLevel-1);
+document.getElementById('wpn-up').onclick   = () => { if(mode==='multi')return; setWpn(wpnLevel+1); };
+document.getElementById('wpn-down').onclick = () => { if(mode==='multi')return; setWpn(wpnLevel-1); };
 { const mb=document.getElementById('wpn-mode'); if(mb) mb.onclick=()=>{ fireMode = fireMode==='spread'?'focus':'spread'; mb.textContent = fireMode==='focus'?'FOCUS':'SPREAD'; mb.classList.toggle('focus', fireMode==='focus'); setWpn(wpnLevel); }; }
 
 function setWpn(lv){
   wpnLevel = clamp(lv, 1, MAX_WPN_LV);
   document.getElementById('wpn-level').textContent = 'LV ' + wpnLevel;
+  const _amt = (mode==='multi') ? '∞ ammo' : ('cost '+wpnLevel);
   document.getElementById('wpn-cost').textContent  =
-    fireMode==='focus' ? `cost ${wpnLevel} · 1 shot, ${wpnLevel} dmg` : `cost ${wpnLevel} · ${wpnLevel} shots, 1 dmg`;
+    fireMode==='focus' ? `${_amt} · 1 shot, ${wpnLevel} dmg` : `${_amt} · ${wpnLevel} shots, 1 dmg`;
 }
 
 // ── firing ───────────────────────────────────────────────────────
 function tryFire(){
   if (!running) return;
-  const cost = wpnLevel;
-  if (credits < cost) {           // not enough — drop to affordable
-    if (credits < 1) return;
-    setWpn(credits);
+  if (mode !== 'multi'){          // multiplayer = infinite ammo
+    const cost = wpnLevel;
+    if (credits < cost) {
+      if (credits < 1) return;
+      setWpn(credits);
+    }
+    credits -= wpnLevel;
   }
-  credits -= wpnLevel;
   stats.shots++;
   const dx = aim.x - cannon.x, dy = aim.y - cannon.y;
   const a  = Math.atan2(dy, dx);
@@ -520,7 +523,7 @@ function updateFx(dt){
   updateBgLife(dt);
   creditsShown += (credits - creditsShown) * Math.min(1, dt*3.5);
   if (Math.abs(credits - creditsShown) < 1) creditsShown = credits;
-  { const _e=document.getElementById('hud-credits'); if(_e) _e.textContent = Math.max(0,Math.round(creditsShown)); }
+  { const _e=document.getElementById('hud-credits'); if(_e) _e.textContent = (mode==='multi')?'∞':Math.max(0,Math.round(creditsShown)); }
   for (const c of coinsFx){
     if (c.delay>0){ c.delay-=dt; continue; }
     c.t += dt; c.spin += c.spinV*dt;
@@ -608,9 +611,9 @@ function labelFor(k){
 // ── HUD ──────────────────────────────────────────────────────────
 function updateHUD(){
   document.getElementById('hud-score').textContent   = score;
-  document.getElementById('hud-credits').textContent = Math.max(0,Math.round(creditsShown));
+  document.getElementById('hud-credits').textContent = (mode==='multi')?'∞':Math.max(0,Math.round(creditsShown));
   document.getElementById('hud-time').textContent    =
-    mode==='tournament' ? Math.ceil(timeLeft) : '∞';
+    (mode==='tournament'||mode==='multi') ? Math.ceil(timeLeft) : '∞';
 }
 
 // ── ambient (decorative) fish for splash + menu ──────────────────
@@ -756,10 +759,10 @@ function update(dt){
   elapsed += dt;
   cannon.x = W/2; cannon.y = H - 40;
 
-  if (mode==='tournament'){
+  if (mode==='tournament' || mode==='multi'){
     timeLeft -= dt;
     if (timeLeft <= 0){ timeLeft = 0; return endGame(); }
-    if (credits < 1){ brokeT += dt; if (brokeT > 0.8) return endGame(); } else brokeT = 0;
+    if (mode==='tournament' && credits < 1){ brokeT += dt; if (brokeT > 0.8) return endGame(); } else brokeT = 0;
   }
 
   // auto-fire while holding
@@ -1412,11 +1415,11 @@ requestAnimationFrame(loop);
 // ── start / end ──────────────────────────────────────────────────
 function startGame(){
   fish=[]; bullets=[]; particles=[]; pops=[]; rings=[];
-  score=0; credits=(mode==='free'?100000:START_CREDITS); creditsShown=credits; timeLeft=ROUND_TIME; brokeT=0;
+  score=0; credits=((mode==='free'||mode==='multi')?100000:START_CREDITS); creditsShown=credits; timeLeft=ROUND_TIME; brokeT=0;
   combo=1; comboKills=0; comboTimer=0; spawnTimer=0; elapsed=0;
   shake=0; flash=0; wpnLevel=1; firing=false;
   stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
-  setWpn(1); updateHUD();
+  setWpn(mode==='multi'?3:1); updateHUD();
   document.getElementById('hud-combo').textContent='x1';
   document.getElementById('combo-block').classList.remove('live');
   document.getElementById('overlay-start').classList.add('hidden');
@@ -1510,7 +1513,7 @@ document.querySelectorAll('#ov-mode .mode-btn').forEach(btn=>{
 document.getElementById('btn-start').onclick = ()=>{ mode='tournament'; startGame(); };
 const _sm = document.getElementById('soon-msg');
 function showSoon(w){ if(_sm){ _sm.textContent = w + ' - coming soon'; _sm.classList.add('show'); clearTimeout(showSoon._t); showSoon._t=setTimeout(()=>_sm.classList.remove('show'),1900); } }
-{ const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>showSoon('Multiplayer'); }
+{ const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>{ mode='multi'; startGame(); }; }
 { const b=document.getElementById('btn-demo'); if(b) b.onclick=()=>{ mode='free'; startGame(); }; }
 { const b=document.getElementById('btn-credits'); if(b) b.onclick=()=>{ renderCredits(); const o=document.getElementById('overlay-credits'); if(o) o.classList.remove('hidden'); }; }
 { const b=document.getElementById('credits-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-credits'); if(o) o.classList.add('hidden'); }; }
