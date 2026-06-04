@@ -184,7 +184,7 @@ logoImg.src = 'assets/logo.png';
 // optional ludo.ai seabed/background image (assets/scene.png)
 const sceneImg = new Image(); let sceneReady = false;
 sceneImg.onload = () => { sceneReady = true; };
-sceneImg.src = 'assets/scene.png';
+sceneImg.src = 'assets/scene.png?v=1';
 
 // optional ludo.ai cannon turret (assets/cannon.png) — barrel pointing UP
 const cannonImg = new Image(); let cannonReady = false;
@@ -946,8 +946,19 @@ function drawBackground(time){
     let dw,dh; if (cr>ir){ dw=W; dh=W/ir; } else { dh=H; dw=H*ir; }
     ctx.drawImage(sceneImg, (W-dw)/2, (H-dh)/2, dw, dh);
     const ov = ctx.createLinearGradient(0,0,0,H);
-    ov.addColorStop(0,'rgba(4,18,31,.35)'); ov.addColorStop(1,'rgba(1,7,13,.78)');
+    ov.addColorStop(0,'rgba(4,18,31,.16)'); ov.addColorStop(0.55,'rgba(2,12,22,.10)'); ov.addColorStop(1,'rgba(1,7,13,.48)');
     ctx.fillStyle = ov; ctx.fillRect(0,0,W,H);
+    // drifting caustic light — living water over the scene
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    for (let i=0;i<6;i++){
+      const cx2 = (((Math.sin(i*2.3)*0.5+0.5) + ts*0.015*(1+i*0.22)) % 1) * W;
+      const cy2 = H*(0.16+0.13*i) + Math.sin(ts*0.55+i*1.3)*16;
+      const rr = 150+i*34;
+      const cg = ctx.createRadialGradient(cx2,cy2,0,cx2,cy2,rr);
+      cg.addColorStop(0,`rgba(125,215,228,${(0.045+0.008*i).toFixed(3)})`); cg.addColorStop(1,'rgba(125,215,228,0)');
+      ctx.fillStyle=cg; ctx.beginPath(); ctx.arc(cx2,cy2,rr,0,6.28); ctx.fill();
+    }
+    ctx.restore();
   } else {
     const g = ctx.createLinearGradient(0,0,0,H);
     g.addColorStop(0,   _mix([56,188,216],[10,58,85], d));
