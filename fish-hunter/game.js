@@ -48,18 +48,18 @@ const COMBO_WINDOW = 2.6;     // seconds to keep the combo alive
 // ── fish catalogue ───────────────────────────────────────────────
 // hp, value(points), size(radius-ish), speed(px/s), color, glow
 const FISH_TYPES = {
-  minnow : { hp:1,  value:5,   size:16, speed:170, color:'#39e6c4', glow:'#aef9ec', weight:38, coins:1 },
-  fry    : { hp:1,  value:3,   size:11, speed:215, color:'#7fe0d0', glow:'#cffaf0', weight:24, coins:1, spriteFrom:'minnow' },
-  darter : { hp:3,  value:12,  size:22, speed:135, color:'#4aa8ff', glow:'#bfe2ff', weight:28, coins:3 },
-  ray    : { hp:5,  value:30,  size:34, speed:88,  color:'#b07bff', glow:'#e4d2ff', weight:18, coins:7 },
-  angler : { hp:10, value:70,  size:30, speed:110, color:'#ff7a59', glow:'#ffd2b0', weight:9,  coins:16, hunter:true },
-  golden : { hp:16, value:160, size:30, speed:160, color:'#ffce63', glow:'#fff1c2', weight:4,  coins:30, shiny:true },
-  levia  : { hp:60, value:380, size:64, speed:55,  color:'#ffb13d', glow:'#ffe7a8', weight:1,  coins:100, boss:true },
-  seacat : { hp:20, value:100, size:42, speed:95,  color:'#9aa6b0', glow:'#d7e0e8', weight:6,  coins:30 },
-  shark  : { hp:40, value:230, size:58, speed:135, color:'#7f93a3', glow:'#cfe0ee', weight:3,  coins:60 },
-  whale  : { hp:85, value:600, size:118, speed:46, color:'#3a78d0', glow:'#a9d0ff', weight:1,  coins:130 },
-  megalodon:{ hp:320, value:2000, size:140, speed:38, color:'#5a6b7a', glow:'#cfe0ee', weight:0, coins:450, boss:true },
-  jackpot: { hp:140, value:2000,size:74, speed:80,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:300, jackpot:true },
+  minnow : { hp:2,  value:5,   size:16, speed:170, color:'#39e6c4', glow:'#aef9ec', weight:38, coins:1 },
+  fry    : { hp:2,  value:3,   size:11, speed:215, color:'#7fe0d0', glow:'#cffaf0', weight:24, coins:1, spriteFrom:'minnow' },
+  darter : { hp:5,  value:12,  size:22, speed:135, color:'#4aa8ff', glow:'#bfe2ff', weight:28, coins:3 },
+  ray    : { hp:9,  value:30,  size:34, speed:88,  color:'#b07bff', glow:'#e4d2ff', weight:18, coins:7 },
+  angler : { hp:17, value:70,  size:30, speed:110, color:'#ff7a59', glow:'#ffd2b0', weight:9,  coins:16, hunter:true },
+  golden : { hp:27, value:160, size:30, speed:160, color:'#ffce63', glow:'#fff1c2', weight:4,  coins:30, shiny:true },
+  levia  : { hp:102, value:380, size:64, speed:55,  color:'#ffb13d', glow:'#ffe7a8', weight:1,  coins:100, boss:true },
+  seacat : { hp:34, value:100, size:42, speed:95,  color:'#9aa6b0', glow:'#d7e0e8', weight:6,  coins:30 },
+  shark  : { hp:68, value:230, size:58, speed:135, color:'#7f93a3', glow:'#cfe0ee', weight:3,  coins:60 },
+  whale  : { hp:145, value:600, size:118, speed:46, color:'#3a78d0', glow:'#a9d0ff', weight:1,  coins:130 },
+  megalodon:{ hp:544, value:2000, size:140, speed:38, color:'#5a6b7a', glow:'#cfe0ee', weight:0, coins:450, boss:true },
+  jackpot: { hp:238, value:2000,size:74, speed:80,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:300, jackpot:true },
 };
 const TYPE_KEYS = Object.keys(FISH_TYPES);
 const TOTAL_WEIGHT = TYPE_KEYS.reduce((s,k)=>s+FISH_TYPES[k].weight,0);
