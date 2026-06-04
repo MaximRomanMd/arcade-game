@@ -69,7 +69,7 @@ TYPE_KEYS.forEach(k => {
   if (FISH_TYPES[k].spriteFrom) return;
   const img = new Image();
   img.onload = () => { FISH_TYPES[k].sprite = img; buildMask(k, img, 1, 1); };
-  img.src = `assets/fish-${k}.png?t=${Date.now()}`;
+  img.src = `assets/fish-${k}.png?v=2`;
 });
 // ── damage zone = the fish silhouette (alpha mask of the sprite) ──
 const MASK = {};
@@ -676,19 +676,29 @@ function updateAmbient(dt){
   particles = particles.filter(p => p.life > 0);
 }
 
-// ── boot: splash + loading, then reveal menu ─────────────────────
+// ── boot: splash + loading (waits for the real assets), then menu ──
+function assetFrac(){
+  let total=0, done=0;
+  for (const k in FISHANIM){ total++; if (FISHANIM[k].ready) done++; }
+  total++; if (sceneReady) done++;
+  total++; if (cannonImg.complete && cannonImg.naturalWidth) done++;
+  for (const k of TYPE_KEYS){ if (FISH_TYPES[k].spriteFrom) continue; total++; if (FISH_TYPES[k].sprite) done++; }
+  return total ? done/total : 1;
+}
 function updateBoot(dt){
   bootT += dt;
-  const p = clamp(bootT / BOOT_DUR, 0, 1);
-  const eased = p*p*(3-2*p);
+  const aFrac = assetFrac();
+  const shown = clamp(Math.min(bootT/1.2, 0.06 + 0.94*aFrac), 0, 1);
+  const eased = shown*shown*(3-2*shown);
   const fill = document.getElementById('loading-fill');
   const pct  = document.getElementById('loading-pct');
   const msg  = document.getElementById('loading-msg');
   if (fill) fill.style.width = (eased*100).toFixed(0) + '%';
   if (pct)  pct.textContent  = Math.round(eased*100) + '%';
-  if (msg)  msg.textContent  = LOAD_MSGS[Math.min(LOAD_MSGS.length-1, Math.floor(p*LOAD_MSGS.length))];
+  if (msg)  msg.textContent  = LOAD_MSGS[Math.min(LOAD_MSGS.length-1, Math.floor(shown*LOAD_MSGS.length))];
   updateAmbient(dt);
-  if (p >= 1) startDive();
+  // start only when essential assets are ready (min splash time), or after a safety timeout
+  if ((aFrac >= 1 && bootT >= BOOT_DUR) || bootT >= 16) startDive();
 }
 
 // ── dive: the plunge from splash down into the sea ───────────────
