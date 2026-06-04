@@ -136,7 +136,7 @@ let hitStop = 0;
 let coinsFx = [];
 let waves = [];
 let zoomPunch = 0, zx = 0, zy = 0;
-let powerups = [], puTimer = 7;
+let powerups = [], puTimer = 18;
 let jackpotTimer = 32;
 let megTimer = 45, megAlert = 0, megPending = false;
 let freezeT = 0, doubleT = 0, multiT = 0;
@@ -146,7 +146,7 @@ const POWERUPS = {
   multi:  { icon:'M',  color:'#28e0c8', label:'MULTI'  },
   bomb:   { icon:'B',  color:'#ff5d6c', label:'BOMB'   },
 };
-const PU_KEYS = ['freeze','frenzy','multi','bomb'];
+const PU_KEYS = ['freeze'];
 let stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
 const cannon = { x: W/2, y: H, len: 46 };
 // cannon sprite geometry (measured from cannon.png): joint at 66% down, ratio 0.756
@@ -618,7 +618,7 @@ function spawnPowerup(){
 }
 function activatePowerup(pu){
   const cfg = POWERUPS[pu.key];
-  if (pu.key==='freeze') freezeT = 4.5;
+  if (pu.key==='freeze') freezeT = 7.5;
   else if (pu.key==='frenzy') doubleT = 7;
   else if (pu.key==='multi') multiT = 7;
   else if (pu.key==='bomb'){ for (const f of [...fish]) hurtFish(f, 999, f.x, f.y); shake = 22; }
@@ -818,7 +818,7 @@ function update(dt){
   }
   if (fish.length < 8) spawnFish(srand()<0.5); // keep the sea busy
   puTimer -= dt;
-  if (puTimer <= 0){ spawnPowerup(); puTimer = srange(9, 15); }
+  if (puTimer <= 0){ spawnPowerup(); puTimer = srange(15, 25); }
   for (const pu of powerups){ pu.t += dt; pu.x += pu.vx*dt; pu.y = pu.baseY + Math.sin(pu.t*1.5 + pu.phase)*14;
     if (pu.x < -50 || pu.x > W+50) pu._gone = true; }
   powerups = powerups.filter(pu => !pu._gone);
@@ -1430,7 +1430,7 @@ function render(time){
   }
   if (phase==='playing'){
     const act = [];
-    if (freezeT>0) act.push(['FREEZE','#7fd4ff',freezeT,4.5]);
+    if (freezeT>0) act.push(['FREEZE','#7fd4ff',freezeT,7.5]);
     if (doubleT>0) act.push(['FRENZY x2','#ffce63',doubleT,7]);
     if (multiT>0)  act.push(['MULTI-SHOT','#28e0c8',multiT,7]);
     let ax = W/2 - act.length*56;
@@ -1470,6 +1470,7 @@ function startGame(){
   score=0; credits=((mode==='free'||mode==='multi')?100000:START_CREDITS); creditsShown=credits; timeLeft=ROUND_TIME; brokeT=0;
   combo=1; comboKills=0; comboTimer=0; spawnTimer=0; elapsed=0;
   shake=0; flash=0; wpnLevel=1; firing=false;
+  powerups=[]; puTimer=18; freezeT=0; doubleT=0; multiT=0;
   stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
   setWpn(mode==='multi'?3:1); updateHUD();
   document.getElementById('hud-combo').textContent='x1';
