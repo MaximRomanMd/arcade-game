@@ -185,9 +185,16 @@ logoImg.src = 'assets/logo.png';
 const sceneImg = new Image(); let sceneReady = false;
 sceneImg.onload = () => { sceneReady = true; };
 sceneImg.src = 'assets/scene.png?v=2';
-const algeAnim = new Image(); let algeReady=false;
-algeAnim.onload=()=>{ algeReady=true; };
-algeAnim.src='assets/alge-anim.png?v=1';
+const algeAnim = new Image(); algeAnim.src='assets/alge-anim.png?v=1';
+const algePurple = new Image(); algePurple.src='assets/alge-purple-anim.png?v=1';
+const algeOrange = new Image(); algeOrange.src='assets/alge-orange-anim.png?v=1';
+const algeTeal = new Image(); algeTeal.src='assets/alge-teal-anim.png?v=1';
+const coralFan = new Image(); coralFan.src='assets/coral-fan-anim.png?v=1';
+const PLANTINST = [
+  ['green',0.03,0.42,0],['purple',0.09,0.30,5],['teal',0.15,0.24,9],['orange',0.21,0.18,2],['coral',0.27,0.15,12],
+  ['green',0.34,0.16,7],['purple',0.41,0.13,3],
+  ['coral',0.60,0.14,10],['green',0.67,0.15,1],['teal',0.73,0.18,6],['orange',0.79,0.22,13],['purple',0.86,0.28,4],['teal',0.92,0.34,8],['green',0.97,0.42,11]
+];
 
 // optional ludo.ai cannon turret (assets/cannon.png) — barrel pointing UP
 const cannonImg = new Image(); let cannonReady = false;
@@ -991,19 +998,19 @@ function drawWaterLife(ts, d){
     ctx.beginPath(); ctx.arc(bx-br*0.3,by-br*0.3,br*0.28,0,6.28); ctx.fill();
   }
   ctx.globalAlpha=1; ctx.restore();
-  // swaying foreground kelp — real animated sprites
-  if (algeReady){
-    ctx.save(); ctx.globalAlpha = vis;
-    const cols=4, rows=4, frames=16, fw=algeAnim.width/cols, fh=algeAnim.height/rows, ar=fw/fh;
-    const KELPS=[[0.04,0.40,0],[0.12,0.27,6],[0.96,0.42,9],[0.87,0.28,3],[0.33,0.18,12],[0.70,0.20,14]];
-    for (const k of KELPS){
-      const fr=(Math.floor(ts*8 + k[2])%frames+frames)%frames;
-      const cx=(fr%cols)*fw, cy=Math.floor(fr/cols)*fh;
-      const dH=H*k[1], dW=dH*ar, dx=W*k[0]-dW/2, dy=H-dH+12;
-      ctx.drawImage(algeAnim, cx,cy,fw,fh, dx,dy,dW,dH);
-    }
-    ctx.globalAlpha=1; ctx.restore();
+  // animated plants (mixed colours) swaying over the scene
+  ctx.save(); ctx.globalAlpha = vis;
+  const _PL = {green:algeAnim, purple:algePurple, orange:algeOrange, teal:algeTeal, coral:coralFan};
+  for (const pi of PLANTINST){
+    const img=_PL[pi[0]];
+    if (!img || !img.complete || !img.naturalWidth) continue;
+    const fw=img.width/4, fh=img.height/4;
+    const fr=(Math.floor(ts*8 + pi[3])%16+16)%16;
+    const cx=(fr%4)*fw, cy=Math.floor(fr/4)*fh;
+    const dH=H*pi[2], dW=dH*(fw/fh), dx=W*pi[1]-dW/2, dy=H-dH+12;
+    ctx.drawImage(img, cx,cy,fw,fh, dx,dy,dW,dH);
   }
+  ctx.globalAlpha=1; ctx.restore();
 }
 function drawBackground(time){
   const ts = time*0.001;
