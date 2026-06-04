@@ -59,7 +59,7 @@ const FISH_TYPES = {
   shark  : { hp:68, value:230, size:58, speed:135, color:'#7f93a3', glow:'#cfe0ee', weight:3,  coins:60 },
   whale  : { hp:145, value:600, size:118, speed:46, color:'#3a78d0', glow:'#a9d0ff', weight:1,  coins:130 },
   megalodon:{ hp:544, value:2000, size:140, speed:38, color:'#5a6b7a', glow:'#cfe0ee', weight:0, coins:450, boss:true },
-  jackpot: { hp:238, value:2000,size:74, speed:80,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:300, jackpot:true },
+  jackpot: { hp:500, value:2000,size:74, speed:80,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:300, jackpot:true },
 };
 const TYPE_KEYS = Object.keys(FISH_TYPES);
 const TOTAL_WEIGHT = TYPE_KEYS.reduce((s,k)=>s+FISH_TYPES[k].weight,0);
