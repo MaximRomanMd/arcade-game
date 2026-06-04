@@ -549,7 +549,7 @@ function updateFx(dt){
   updateBgLife(dt);
   creditsShown += (credits - creditsShown) * Math.min(1, dt*3.5);
   if (Math.abs(credits - creditsShown) < 1) creditsShown = credits;
-  { const _e=document.getElementById('hud-credits'); if(_e) _e.textContent = (mode==='multi')?'∞':Math.max(0,Math.round(creditsShown)); }
+  { const _v=(mode==='multi')?'∞':Math.max(0,Math.round(creditsShown)); const _e=document.getElementById('hud-credits'); if(_e) _e.textContent=_v; const _w=document.getElementById('wallet-val'); if(_w) _w.textContent=_v; }
   for (const c of coinsFx){
     if (c.delay>0){ c.delay-=dt; continue; }
     c.t += dt; c.spin += c.spinV*dt;
@@ -637,7 +637,7 @@ function labelFor(k){
 // ── HUD ──────────────────────────────────────────────────────────
 function updateHUD(){
   document.getElementById('hud-score').textContent   = score;
-  document.getElementById('hud-credits').textContent = (mode==='multi')?'∞':Math.max(0,Math.round(creditsShown));
+  { const _v2=(mode==='multi')?'∞':Math.max(0,Math.round(creditsShown)); document.getElementById('hud-credits').textContent=_v2; const _w2=document.getElementById('wallet-val'); if(_w2) _w2.textContent=_v2; }
   document.getElementById('hud-time').textContent    =
     (mode==='tournament'||mode==='multi') ? Math.ceil(timeLeft) : '∞';
 }
