@@ -59,7 +59,7 @@ const FISH_TYPES = {
   shark  : { hp:68, value:230, size:58, speed:135, color:'#7f93a3', glow:'#cfe0ee', weight:3,  coins:60 },
   whale  : { hp:145, value:600, size:118, speed:46, color:'#3a78d0', glow:'#a9d0ff', weight:1,  coins:130 },
   megalodon:{ hp:544, value:2000, size:140, speed:38, color:'#5a6b7a', glow:'#cfe0ee', weight:0, coins:450, boss:true },
-  jackpot: { hp:500, value:2000,size:74, speed:80,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:300, jackpot:true },
+  jackpot: { hp:500, value:2000,size:148, speed:80,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:300, jackpot:true },
 };
 const TYPE_KEYS = Object.keys(FISH_TYPES);
 const TOTAL_WEIGHT = TYPE_KEYS.reduce((s,k)=>s+FISH_TYPES[k].weight,0);
@@ -1032,7 +1032,7 @@ function drawFish(f){
   if (f.vy !== undefined && (f.vx||f.vy)){ const _ang=Math.atan2(f.vy,f.vx||0.0001); ctx.rotate(_ang); if (Math.abs(_ang)>Math.PI/2) ctx.scale(1,-1); }
   else if (f.dir < 0) ctx.scale(-1,1);
   const s = f.size;
-  const _fa = FISHANIM[f.spriteFrom||f.key];
+  const _fa = FISHANIM[f.spriteFrom||f.key] || (f.jackpot ? FISHANIM['golden'] : null);
   if (_fa && _fa.ready){
     const fw=_fa.img.width/_fa.cols, fh=_fa.img.height/_fa.rows;
     const fr=Math.floor(performance.now()*_fa.rate)%_fa.frames;
