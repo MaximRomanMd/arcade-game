@@ -947,6 +947,53 @@ function drawBgLife(){
   }
 }
 
+function drawKelp(bx, by, h, w, ph, ts){
+  const N=10, L=[], R=[];
+  for (let i=0;i<=N;i++){
+    const t=i/N, yy=by - t*h;
+    const sway=Math.sin(ts*1.15 + ph + t*2.6)*(w*2.4)*t;
+    const ww=Math.max(1, w*(1-0.78*t));
+    L.push([bx+sway-ww, yy]); R.push([bx+sway+ww, yy]);
+  }
+  ctx.beginPath(); ctx.moveTo(L[0][0],L[0][1]);
+  for (let i=1;i<L.length;i++) ctx.lineTo(L[i][0],L[i][1]);
+  for (let i=R.length-1;i>=0;i--) ctx.lineTo(R[i][0],R[i][1]);
+  ctx.closePath();
+  const g=ctx.createLinearGradient(0,by-h,0,by);
+  g.addColorStop(0,'rgba(34,98,88,0)'); g.addColorStop(0.5,'rgba(20,76,72,0.45)'); g.addColorStop(1,'rgba(11,52,54,0.8)');
+  ctx.fillStyle=g; ctx.fill();
+  // a couple of lighter fronds for detail
+  ctx.strokeStyle='rgba(60,150,130,0.25)'; ctx.lineWidth=2;
+  ctx.beginPath();
+  for (let i=0;i<=N;i++){ const t=i/N, yy=by-t*h, sway=Math.sin(ts*1.15+ph+t*2.6)*(w*2.4)*t; i===0?ctx.moveTo(bx+sway,yy):ctx.lineTo(bx+sway,yy); }
+  ctx.stroke();
+}
+function drawWaterLife(ts, d){
+  if (d < 0.85) return;
+  const vis = Math.min(1,(d-0.85)/0.15);
+  // rising bubble streams
+  ctx.save();
+  for (let i=0;i<18;i++){
+    const sd=i*51.3;
+    const colX=(Math.sin(sd)*0.5+0.5)*W;
+    const prog=((ts*(0.05+0.028*(i%4)) + (Math.sin(sd*1.7)*0.5+0.5)) % 1 + 1)%1;
+    const by=H - prog*H*1.04;
+    const bx=colX + Math.sin(ts*1.4 + i*2.1 + prog*6)*10;
+    const br=1.6 + (i%4)*1.2 + (1-prog)*1.1;
+    const a=(0.12+0.10*Math.sin(prog*Math.PI))*vis;
+    ctx.globalAlpha=a;
+    ctx.fillStyle='rgba(170,225,240,0.16)'; ctx.strokeStyle='rgba(205,240,250,0.55)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(bx,by,br,0,6.28); ctx.fill(); ctx.stroke();
+    ctx.globalAlpha=a*0.9; ctx.fillStyle='rgba(255,255,255,0.6)';
+    ctx.beginPath(); ctx.arc(bx-br*0.3,by-br*0.3,br*0.28,0,6.28); ctx.fill();
+  }
+  ctx.globalAlpha=1; ctx.restore();
+  // swaying foreground kelp (edges tall, center short so it never blocks play)
+  ctx.save(); ctx.globalAlpha = vis;
+  const kelps=[[W*0.05,H*0.34,18,0.2],[W*0.12,H*0.24,12,1.1],[W*0.95,H*0.36,18,2.0],[W*0.88,H*0.23,12,3.3],[W*0.33,H*0.12,10,4.0],[W*0.67,H*0.13,11,5.1]];
+  for (const k of kelps) drawKelp(k[0], H+8, k[1], k[2], k[3], ts);
+  ctx.globalAlpha=1; ctx.restore();
+}
 function drawBackground(time){
   const ts = time*0.001;
   const d = descent;
@@ -1033,6 +1080,8 @@ function drawBackground(time){
     ctx.beginPath(); ctx.arc(bx,by,1.5+pulse,0,6.28); ctx.fill();
   }
   ctx.restore();
+
+  drawWaterLife(ts, d);
 
   if (!sceneReady && d > 0.5){
     const ka = Math.min(1,(d-0.5)/0.5);
