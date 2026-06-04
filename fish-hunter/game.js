@@ -1001,13 +1001,7 @@ function drawBackground(time){
   if (sceneReady && d > 0.85){
     const ir = sceneImg.width/sceneImg.height, cr = W/H;
     let dw,dh; if (cr>ir){ dw=W; dh=W/ir; } else { dh=H; dw=H*ir; }
-    dw*=1.06; dh*=1.06;                          // overscan so the ripple never bares the edges
-    const _ox=(W-dw)/2, _oy=(H-dh)/2, _STR=54, _sh=dh/_STR, _ssh=sceneImg.height/_STR;
-    for (let i=0;i<_STR;i++){
-      const yf=i/_STR, amp=2.5 + yf*yf*20;       // clearly visible: seabed plants sway a lot, water shimmers up top
-      const dx=Math.sin(yf*7.5 + ts*2.0)*amp + Math.sin(yf*15 + ts*1.3)*amp*0.4;
-      ctx.drawImage(sceneImg, 0, i*_ssh, sceneImg.width, _ssh+1, _ox+dx, _oy+i*_sh, dw, _sh+1.2);
-    }
+    ctx.drawImage(sceneImg, (W-dw)/2, (H-dh)/2, dw, dh);
     const ov = ctx.createLinearGradient(0,0,0,H);
     ov.addColorStop(0,'rgba(4,18,31,.16)'); ov.addColorStop(0.55,'rgba(2,12,22,.10)'); ov.addColorStop(1,'rgba(1,7,13,.48)');
     ctx.fillStyle = ov; ctx.fillRect(0,0,W,H);
