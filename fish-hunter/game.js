@@ -185,20 +185,6 @@ logoImg.src = 'assets/logo.png';
 const sceneImg = new Image(); let sceneReady = false;
 sceneImg.onload = () => { sceneReady = true; };
 sceneImg.src = 'assets/scene.png?v=2';
-// live animated video background
-const sceneVid = document.createElement('video');
-sceneVid.muted = true; sceneVid.loop = true; sceneVid.playsInline = true; sceneVid.autoplay = true;
-sceneVid.setAttribute('playsinline',''); sceneVid.setAttribute('muted',''); sceneVid.setAttribute('autoplay','');
-sceneVid.preload = 'auto';
-sceneVid.style.cssText = 'position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none;';
-let sceneVidReady = false;
-const _playScene = () => { const pr = sceneVid.play(); if (pr) pr.catch(()=>{}); };
-sceneVid.addEventListener('loadeddata', () => { sceneVidReady = true; _playScene(); });
-sceneVid.addEventListener('canplay', _playScene);
-sceneVid.src = 'assets/scene.mp4?v=2';
-(document.body || document.documentElement).appendChild(sceneVid);   // some browsers only play attached videos
-['pointerdown','keydown','touchstart','click'].forEach(ev => document.addEventListener(ev, _playScene));
-_playScene();
 
 // optional ludo.ai cannon turret (assets/cannon.png) — barrel pointing UP
 const cannonImg = new Image(); let cannonReady = false;
@@ -1013,13 +999,9 @@ function drawBackground(time){
   const d = descent;
 
   if (sceneReady && d > 0.85){
-    const _uv = sceneVidReady && sceneVid.readyState>=2 && sceneVid.videoWidth>0;
-    const _src = _uv ? sceneVid : sceneImg;
-    const _sw = _uv ? sceneVid.videoWidth : sceneImg.width;
-    const _shh = _uv ? sceneVid.videoHeight : sceneImg.height;
-    const ir = _sw/_shh, cr = W/H;
+    const ir = sceneImg.width/sceneImg.height, cr = W/H;
     let dw,dh; if (cr>ir){ dw=W; dh=W/ir; } else { dh=H; dw=H*ir; }
-    ctx.drawImage(_src, (W-dw)/2, (H-dh)/2, dw, dh);
+    ctx.drawImage(sceneImg, (W-dw)/2, (H-dh)/2, dw, dh);
     const ov = ctx.createLinearGradient(0,0,0,H);
     ov.addColorStop(0,'rgba(4,18,31,.16)'); ov.addColorStop(0.55,'rgba(2,12,22,.10)'); ov.addColorStop(1,'rgba(1,7,13,.48)');
     ctx.fillStyle = ov; ctx.fillRect(0,0,W,H);
@@ -1523,7 +1505,7 @@ function startGame(){
   shake=0; flash=0; wpnLevel=1; firing=false;
   powerups=[]; puTimer=18; freezeT=0; doubleT=0; multiT=0;
   stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
-  setWpn(mode==='multi'?3:1); updateHUD(); try{ sceneVid.play(); }catch(e){}
+  setWpn(mode==='multi'?3:1); updateHUD();
   document.getElementById('hud-combo').textContent='x1';
   document.getElementById('combo-block').classList.remove('live');
   document.getElementById('overlay-start').classList.add('hidden');
