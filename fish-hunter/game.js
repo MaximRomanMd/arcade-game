@@ -1004,8 +1004,8 @@ function drawBackground(time){
     dw*=1.06; dh*=1.06;                          // overscan so the ripple never bares the edges
     const _ox=(W-dw)/2, _oy=(H-dh)/2, _STR=54, _sh=dh/_STR, _ssh=sceneImg.height/_STR;
     for (let i=0;i<_STR;i++){
-      const yf=i/_STR, amp=1.5 + yf*yf*9;        // gentle ripple up top, the seabed plants sway more
-      const dx=Math.sin(yf*7.5 + ts*1.5)*amp + Math.sin(yf*15 + ts*0.95)*amp*0.35;
+      const yf=i/_STR, amp=2.5 + yf*yf*20;       // clearly visible: seabed plants sway a lot, water shimmers up top
+      const dx=Math.sin(yf*7.5 + ts*2.0)*amp + Math.sin(yf*15 + ts*1.3)*amp*0.4;
       ctx.drawImage(sceneImg, 0, i*_ssh, sceneImg.width, _ssh+1, _ox+dx, _oy+i*_sh, dw, _sh+1.2);
     }
     const ov = ctx.createLinearGradient(0,0,0,H);
