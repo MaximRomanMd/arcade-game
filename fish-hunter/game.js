@@ -187,12 +187,18 @@ sceneImg.onload = () => { sceneReady = true; };
 sceneImg.src = 'assets/scene.png?v=2';
 // live animated video background
 const sceneVid = document.createElement('video');
-sceneVid.muted = true; sceneVid.loop = true; sceneVid.playsInline = true;
-sceneVid.setAttribute('playsinline',''); sceneVid.setAttribute('muted',''); sceneVid.preload = 'auto';
+sceneVid.muted = true; sceneVid.loop = true; sceneVid.playsInline = true; sceneVid.autoplay = true;
+sceneVid.setAttribute('playsinline',''); sceneVid.setAttribute('muted',''); sceneVid.setAttribute('autoplay','');
+sceneVid.preload = 'auto';
+sceneVid.style.cssText = 'position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none;';
 let sceneVidReady = false;
-sceneVid.addEventListener('loadeddata', () => { sceneVidReady = true; sceneVid.play().catch(()=>{}); });
-sceneVid.src = 'assets/scene.mp4?v=1';
-sceneVid.play().catch(()=>{});
+const _playScene = () => { const pr = sceneVid.play(); if (pr) pr.catch(()=>{}); };
+sceneVid.addEventListener('loadeddata', () => { sceneVidReady = true; _playScene(); });
+sceneVid.addEventListener('canplay', _playScene);
+sceneVid.src = 'assets/scene.mp4?v=2';
+(document.body || document.documentElement).appendChild(sceneVid);   // some browsers only play attached videos
+['pointerdown','keydown','touchstart','click'].forEach(ev => document.addEventListener(ev, _playScene));
+_playScene();
 
 // optional ludo.ai cannon turret (assets/cannon.png) — barrel pointing UP
 const cannonImg = new Image(); let cannonReady = false;
