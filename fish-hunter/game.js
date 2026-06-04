@@ -59,7 +59,7 @@ const FISH_TYPES = {
   shark  : { hp:68, value:230, size:58, speed:135, color:'#7f93a3', glow:'#cfe0ee', weight:3,  coins:60 },
   whale  : { hp:145, value:600, size:118, speed:46, color:'#3a78d0', glow:'#a9d0ff', weight:1,  coins:130 },
   megalodon:{ hp:544, value:2000, size:140, speed:38, color:'#5a6b7a', glow:'#cfe0ee', weight:0, coins:450, boss:true },
-  jackpot: { hp:500, value:2000,size:148, speed:80,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:300, jackpot:true },
+  jackpot: { hp:500, value:2000,size:148, speed:58,  color:'#ffce63', glow:'#fff1c2', weight:0,  coins:300, jackpot:true },
 };
 const TYPE_KEYS = Object.keys(FISH_TYPES);
 const TOTAL_WEIGHT = TYPE_KEYS.reduce((s,k)=>s+FISH_TYPES[k].weight,0);
@@ -68,14 +68,40 @@ const TOTAL_WEIGHT = TYPE_KEYS.reduce((s,k)=>s+FISH_TYPES[k].weight,0);
 TYPE_KEYS.forEach(k => {
   if (FISH_TYPES[k].spriteFrom) return;
   const img = new Image();
-  img.onload = () => { FISH_TYPES[k].sprite = img; };
+  img.onload = () => { FISH_TYPES[k].sprite = img; buildMask(k, img, 1, 1); };
   img.src = `assets/fish-${k}.png?t=${Date.now()}`;
 });
+// ── damage zone = the fish silhouette (alpha mask of the sprite) ──
+const MASK = {};
+const _mc = document.createElement('canvas'); _mc.width=64; _mc.height=32;
+const _mcx = _mc.getContext('2d', { willReadFrequently:true });
+function buildMask(key, img, cols, rows){
+  try {
+    const MW=64, MH=32, fw=img.width/cols, fh=img.height/rows, m=new Uint8Array(MW*MH);
+    for (let r=0;r<rows;r++) for (let c=0;c<cols;c++){
+      _mcx.clearRect(0,0,MW,MH);
+      _mcx.drawImage(img, c*fw, r*fh, fw, fh, 0,0, MW,MH);
+      const d=_mcx.getImageData(0,0,MW,MH).data;
+      for (let i=0;i<MW*MH;i++) if (d[i*4+3]>28) m[i]=1;
+    }
+    MASK[key]={ data:m, mw:MW, mh:MH };
+  } catch(e){}
+}
+// red flash tinted to the silhouette only (offscreen buffer)
+const _fc = document.createElement('canvas'); const _fcx = _fc.getContext('2d');
+function drawFlash(img, sx,sy,sw,sh, bw,bh, a){
+  const W2=Math.max(1,Math.ceil(bw)), H2=Math.max(1,Math.ceil(bh));
+  if (_fc.width<W2) _fc.width=W2; if (_fc.height<H2) _fc.height=H2;
+  _fcx.clearRect(0,0,_fc.width,_fc.height);
+  _fcx.drawImage(img, sx,sy,sw,sh, 0,0, bw,bh);
+  _fcx.globalCompositeOperation='source-atop'; _fcx.fillStyle='#ff2a2a'; _fcx.fillRect(0,0,bw,bh); _fcx.globalCompositeOperation='source-over';
+  ctx.globalAlpha=a; ctx.drawImage(_fc, 0,0,W2,H2, -bw/2,-bh/2, bw,bh); ctx.globalAlpha=1;
+}
 // per-fish ludo swim animations. add one [key,cols,rows,frames,rate] line per fish.
 const FISHANIM = {};
 [['ray',5,5,25,0.00833],['darter',5,5,25,0.00833],['minnow',6,6,36,0.012],['angler',5,5,25,0.00833],['levia',5,5,25,0.00833],['shark',5,5,25,0.00833],['whale',5,5,25,0.00833],['golden',5,5,25,0.00833],['seacat',5,5,25,0.00833],['megalodon',5,5,25,0.006]].forEach(function(e){
   const o={img:new Image(), cols:e[1], rows:e[2], frames:e[3], rate:e[4], ready:false};
-  o.img.onload=function(){ o.ready=true; };
+  o.img.onload=function(){ o.ready=true; buildMask(e[0], o.img, e[1], e[2]); };
   o.img.src=`assets/${e[0]}-anim.png?v=1`;
   FISHANIM[e[0]]=o;
 });
@@ -814,11 +840,21 @@ function update(dt){
     if (b.x<-20||b.x>W+20||b.y<-20||b.y>H+20) b.life = 0;
     // collision
     for (const f of fish){
-      const dx=f.x-b.x, dy=f.y-b.y;
-      if (dx*dx+dy*dy < (f.size+b.r)*(f.size+b.r)){
-        hurtFish(f, b.dmg, b.x, b.y);
-        b.life = 0; break;
+      const s=f.size, dx=f.x-b.x, dy=f.y-b.y;
+      if (dx*dx+dy*dy > (s*2.2+b.r)*(s*2.2+b.r)) continue;        // broad phase
+      const mk=f.spriteFrom||f.key, mask=MASK[mk]||(f.jackpot?MASK['golden']:null);
+      let hit;
+      if (mask){
+        const an=FISHANIM[mk]||(f.jackpot?FISHANIM['golden']:null);
+        const bw=s*3.8, bh=(an&&an.ready)?bw*((an.img.height/an.rows)/(an.img.width/an.cols)):s*2.4;
+        let lx=b.x-f.x; const ly=b.y-f.y; if (f.vx<0) lx=-lx;
+        const u=(lx+bw/2)/bw, v=(ly+bh/2)/bh;
+        hit = (u>=0&&u<=1&&v>=0&&v<=1) && mask.data[Math.min(mask.mh-1,(v*mask.mh)|0)*mask.mw + Math.min(mask.mw-1,(u*mask.mw)|0)];
+      } else {
+        const ex=s*1.6, ey=s*0.82, lx=b.x-f.x, ly=b.y-f.y;
+        hit = (lx*lx)/(ex*ex)+(ly*ly)/(ey*ey) <= 1;
       }
+      if (hit){ hurtFish(f, b.dmg, b.x, b.y); b.life = 0; break; }
     }
     if (b.life>0) for (const pu of powerups){
       const dx=pu.x-b.x, dy=pu.y-b.y;
@@ -1040,7 +1076,7 @@ function drawFish(f){
     ctx.shadowBlur=0;
     const bw=s*3.8, bh=bw*fh/fw;            // keep frame aspect -> no distortion
     ctx.drawImage(_fa.img, cxx, cyy, fw, fh, -bw/2, -bh/2, bw, bh);
-    if (f.hitFlash>0){ ctx.globalAlpha=Math.min(0.85,f.hitFlash*7); ctx.fillStyle='#ff2222'; ctx.beginPath(); ctx.ellipse(0,0,s*1.4,s*0.92,0,0,6.28); ctx.fill(); ctx.globalAlpha=1; }
+    if (f.hitFlash>0){ drawFlash(_fa.img, cxx, cyy, fw, fh, bw, bh, Math.min(0.8,f.hitFlash*6)); }
     if (f.maxHp>3 && f.hp<f.maxHp){ const wbar=s*1.9,hpf=f.hp/f.maxHp; ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(-wbar/2,-s*1.5,wbar,5); ctx.fillStyle=hpf>0.5?'#39e6c4':hpf>0.25?'#ffce63':'#ff5d6c'; ctx.fillRect(-wbar/2,-s*1.5,wbar*hpf,5); }
     ctx.restore(); return;
   }
@@ -1052,12 +1088,7 @@ function drawFish(f){
     ctx.shadowBlur = 0;                 // no glow
     ctx.drawImage(spr, _ox, _oy, _dw, _dh);   // static, complete sprite as-is
     // damage flash — fish turns red when hit
-    if (f.hitFlash > 0){
-      ctx.globalAlpha = Math.min(0.85, f.hitFlash*7);
-      ctx.fillStyle = '#ff2222';
-      ctx.beginPath(); ctx.ellipse(0, 0, s*1.4, s*0.92, 0, 0, 6.28); ctx.fill();
-      ctx.globalAlpha = 1;
-    }
+    if (f.hitFlash > 0){ drawFlash(spr, 0, 0, spr.width, spr.height, _dw, _dh, Math.min(0.8, f.hitFlash*6)); }
     // hp bar for tougher fish
     if (f.maxHp > 3 && f.hp < f.maxHp){
       const wbar = s*1.9, hpf = f.hp/f.maxHp;
