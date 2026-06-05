@@ -120,7 +120,8 @@ function pickType(elapsedFrac){
 
 // ── game state ───────────────────────────────────────────────────
 let mode = 'tournament';
-let multiFormat = '4p';   // '1v1' | '4p' (table size for multiplayer)
+let multiFormat = '4p';
+let multiSeat = 0;
 let running = false;
 let fish = [], bullets = [], particles = [], pops = [], rings = [], bubbles = [];
 let aim = { x: W/2, y: H*0.4 };
@@ -1697,7 +1698,24 @@ document.getElementById('btn-start').onclick = ()=>{ mode='tournament'; startGam
 const _sm = document.getElementById('soon-msg');
 function showSoon(w){ if(_sm){ _sm.textContent = w + ' - coming soon'; _sm.classList.add('show'); clearTimeout(showSoon._t); showSoon._t=setTimeout(()=>_sm.classList.remove('show'),1900); } }
 { const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-multi'); if(o) o.classList.remove('hidden'); }; }
-document.querySelectorAll('#multi-mode .mode-btn').forEach(b=>{ b.onclick=()=>{ multiFormat=b.dataset.fmt; const o=document.getElementById('overlay-multi'); if(o) o.classList.add('hidden'); mode='multi'; startGame(); }; });
+document.querySelectorAll('#multi-mode .mode-btn').forEach(b=>{ b.onclick=()=>{ multiFormat=b.dataset.fmt; openSeats(multiFormat); }; });
+function openSeats(fmt){
+  const table=document.getElementById('seat-table'); if(!table) return; table.innerHTML='';
+  const sub=document.getElementById('seat-sub'); if(sub) sub.textContent = fmt==='1v1' ? '1v1 Duel - pick your side' : '4-Player table - pick your seat';
+  const seats = fmt==='1v1' ? ['left','right'] : ['tl','tr','bl','br'];
+  seats.forEach((pos,i)=>{ const el=document.createElement('div'); el.className='seat '+pos;
+    el.innerHTML='<div class="seat-ico">\u{1FA91}</div><div class="seat-lbl">SEAT '+(i+1)+'</div>';
+    el.onclick=()=>takeSeat(i,el); table.appendChild(el); });
+  const om=document.getElementById('overlay-multi'); if(om) om.classList.add('hidden');
+  const os=document.getElementById('overlay-seat'); if(os) os.classList.remove('hidden');
+}
+function takeSeat(i,el){
+  document.querySelectorAll('#seat-table .seat').forEach(sx=>{ sx.style.pointerEvents='none'; if(sx!==el){ const l=sx.querySelector('.seat-lbl'); if(l) l.textContent='WAITING...'; } });
+  el.classList.add('taken'); const l=el.querySelector('.seat-lbl'); if(l) l.textContent='YOU'; const ic=el.querySelector('.seat-ico'); if(ic) ic.textContent='\u{1F7E2}';
+  multiSeat=i;
+  setTimeout(()=>{ const os=document.getElementById('overlay-seat'); if(os) os.classList.add('hidden'); mode='multi'; startGame(); }, 900);
+}
+{ const b=document.getElementById('seat-close'); if(b) b.onclick=()=>{ const os=document.getElementById('overlay-seat'); if(os) os.classList.add('hidden'); const om=document.getElementById('overlay-multi'); if(om) om.classList.remove('hidden'); }; }
 { const b=document.getElementById('multi-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-multi'); if(o) o.classList.add('hidden'); }; }
 { const b=document.getElementById('btn-demo'); if(b) b.onclick=()=>{ mode='free'; startGame(); }; }
 { const b=document.getElementById('btn-credits'); if(b) b.onclick=()=>{ renderCredits(); const o=document.getElementById('overlay-credits'); if(o) o.classList.remove('hidden'); }; }

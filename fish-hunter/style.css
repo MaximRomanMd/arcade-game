@@ -388,3 +388,19 @@ body.playing #weapon-bar{display:flex;}
 #wallet-hud{display:flex;align-items:center;gap:5px;margin-left:2px;padding:4px 9px;border-radius:11px;background:rgba(0,0,0,.30);border:1px solid rgba(255,206,99,.38);}
 #wallet-hud .coin-ico{width:16px;height:16px;}
 #wallet-val{font:800 14px/1 'Segoe UI',sans-serif;color:#ffce63;}
+
+.seat-card{max-width:640px;}
+.seat-table{position:relative;width:min(560px,82vw);height:320px;margin:18px auto;border-radius:24px;background:radial-gradient(ellipse at center,rgba(20,70,80,.5),rgba(4,18,28,.7));border:1px solid rgba(80,200,200,.25);box-shadow:inset 0 0 40px rgba(0,0,0,.5);}
+.seat-table::before{content:'\1F41F';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:34px;opacity:.45;}
+.seat{position:absolute;width:108px;box-sizing:border-box;padding:12px 8px;border-radius:14px;text-align:center;background:rgba(8,26,36,.85);border:2px solid rgba(120,210,210,.35);cursor:pointer;transition:transform .12s,border-color .12s,background .12s;}
+.seat:hover{transform:scale(1.07);border-color:#28e0c8;background:rgba(14,44,56,.95);}
+.seat.taken{border-color:#ffce63;background:rgba(60,46,10,.9);transform:scale(1.04);cursor:default;}
+.seat .seat-ico{font-size:30px;line-height:1;}
+.seat .seat-lbl{font:800 12px/1.4 'Segoe UI',sans-serif;color:#cfe9ee;letter-spacing:.5px;margin-top:4px;}
+.seat.taken .seat-lbl{color:#ffce63;}
+.seat.left{left:7%;top:50%;margin-top:-46px;}
+.seat.right{right:7%;top:50%;margin-top:-46px;}
+.seat.tl{left:12%;top:9%;}
+.seat.tr{right:12%;top:9%;}
+.seat.bl{left:12%;bottom:9%;}
+.seat.br{right:12%;bottom:9%;}
