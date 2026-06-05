@@ -770,6 +770,24 @@ function renderCredits(){
     '<div class="st-row"><span>Best combo</span><b>x'+(ls(K.bigCombo)||1)+'</b></div>';
 }
 
+function renderRooms(){
+  const list=document.getElementById('rooms-list'); if(!list) return;
+  const prices=[0.5,1,5,10,50];
+  const fmts=[{k:'1v1',name:'1v1 DUEL',seats:2},{k:'4p',name:'4 PLAYERS',seats:4}];
+  let html='';
+  prices.forEach((pr,pi)=>{ fmts.forEach(f=>{
+    const net=pr*f.seats*0.90, top=f.k==='1v1'?net:net*0.5, filled=(pi+(f.k==='4p'?2:1))%f.seats;
+    html+='<div class="room-card" data-fmt="'+f.k+'">'
+      +'<div class="room-logo"><img src="assets/logo.png?v=1" alt=""></div>'
+      +'<div class="room-mid"><div class="room-name">'+f.name+'</div>'
+      +'<div class="room-meta">$'+pr.toFixed(2)+' entry &middot; 90s &middot; seeded</div>'
+      +'<div class="room-players">'+filled+'/'+f.seats+' seated</div></div>'
+      +'<div class="room-right"><div class="room-prize">WIN $'+top.toFixed(2)+'</div>'
+      +'<button class="room-join">JOIN</button></div></div>';
+  }); });
+  list.innerHTML=html;
+  list.querySelectorAll('.room-card').forEach(c=>{ c.querySelector('.room-join').onclick=()=>{ multiFormat=c.dataset.fmt; document.getElementById('overlay-start').classList.add('hidden'); startSeating(multiFormat); }; });
+}
 function renderMenu(){
   if (logoImg.complete && logoImg.naturalWidth > 0){
     const li = document.getElementById('menu-logo-img');
@@ -780,6 +798,7 @@ function renderMenu(){
   const md = document.getElementById('menu-daily');
   if (md) md.textContent = `DAILY CHALLENGE #${dailySeed()}  -  same fish for all`;
   renderDaily();
+  renderRooms();
   const ml = document.getElementById('menu-lb');
   if (ml){
     const wk = weekId();
@@ -1675,7 +1694,7 @@ function startGame(){
   score=0; credits=((mode==='free'||mode==='multi')?100000:START_CREDITS); creditsShown=credits; timeLeft=ROUND_TIME; brokeT=0;
   combo=1; comboKills=0; comboTimer=0; spawnTimer=0; elapsed=0;
   shake=0; flash=0; wpnLevel=1; firing=false;
-  powerups=[]; puTimer=18; freezeT=0; doubleT=0; multiT=0;
+  powerups=[]; puTimer=18; freezeT=0; doubleT=0; multiT=0; cannonHome=null;
   stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
   setWpn(mode==='multi'?3:1); updateHUD();
   document.getElementById('hud-combo').textContent='x1';
@@ -1793,6 +1812,7 @@ function takeSeat(i,el){
 { const b=document.getElementById('multi-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-multi'); if(o) o.classList.add('hidden'); }; }
 { const b=document.getElementById('btn-demo'); if(b) b.onclick=()=>{ mode='free'; startGame(); }; }
 { const b=document.getElementById('btn-credits'); if(b) b.onclick=()=>{ renderCredits(); const o=document.getElementById('overlay-credits'); if(o) o.classList.remove('hidden'); }; }
+{ const b=document.getElementById('btn-practice'); if(b) b.onclick=()=>{ document.getElementById('overlay-start').classList.add('hidden'); mode='free'; startGame(); }; }
 { const b=document.getElementById('credits-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-credits'); if(o) o.classList.add('hidden'); }; }
 document.getElementById('btn-again').onclick = () => { startGame(); };
 document.getElementById('exit-btn').onclick = exitToMenu;

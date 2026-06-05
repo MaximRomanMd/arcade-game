@@ -404,3 +404,21 @@ body.playing #weapon-bar{display:flex;}
 .seat.tr{right:12%;top:9%;}
 .seat.bl{left:12%;bottom:9%;}
 .seat.br{right:12%;bottom:9%;}
+
+.rooms-head{text-align:center;margin:4px 0 14px;}
+.rooms-title{font:900 22px 'Segoe UI',sans-serif;color:#aef9ec;letter-spacing:1px;}
+.rooms-sub{font:600 13px 'Segoe UI',sans-serif;color:rgba(200,230,240,.7);margin-top:3px;}
+.rooms-list{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-height:56vh;overflow-y:auto;padding:4px 6px;}
+.room-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(14,40,52,.92),rgba(8,24,34,.92));border:1px solid rgba(80,200,200,.25);border-radius:14px;padding:11px 13px;transition:border-color .15s,transform .12s;}
+.room-card:hover{border-color:#28e0c8;transform:translateY(-2px);}
+.room-logo img{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));}
+.room-mid{flex:1;text-align:left;min-width:0;}
+.room-name{font:800 16px 'Segoe UI',sans-serif;color:#eaf7ff;}
+.room-meta{font:600 12px 'Segoe UI',sans-serif;color:rgba(190,220,230,.75);margin-top:2px;}
+.room-players{font:700 11px 'Segoe UI',sans-serif;color:#7fd4ff;margin-top:4px;}
+.room-right{text-align:center;flex:0 0 auto;}
+.room-prize{font:800 13px 'Segoe UI',sans-serif;color:#ffce63;margin-bottom:6px;white-space:nowrap;}
+.room-join{background:linear-gradient(135deg,#28e0c8,#1aa890);color:#03161a;font:900 14px 'Segoe UI',sans-serif;border:none;border-radius:10px;padding:8px 20px;cursor:pointer;transition:transform .1s,box-shadow .15s;}
+.room-join:hover{transform:scale(1.05);box-shadow:0 4px 14px rgba(40,224,200,.45);}
+.practice-link{display:inline-block;margin-top:14px;color:rgba(180,210,220,.7);font:600 13px 'Segoe UI',sans-serif;cursor:pointer;text-decoration:none;}
+.practice-link:hover{color:#aef9ec;}
