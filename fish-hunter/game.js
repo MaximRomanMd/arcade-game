@@ -297,7 +297,7 @@ function startAmbient(){
   const w=actx.createOscillator(), wg=actx.createGain(); w.frequency.value=0.08; wg.gain.value=0.012; w.connect(wg); wg.connect(ng.gain); w.start();
   noise.start();
 
-  ambGain.gain.linearRampToValueAtTime(0.6, actx.currentTime + 2.5);
+  ambGain.gain.linearRampToValueAtTime(0.38, actx.currentTime + 2.5);
 
   // ── cheerful gentle arpeggio: C major pentatonic, soft bells ──
   const scale=[523.25,587.33,659.25,783.99,880.0,1046.5]; let melI=2;
@@ -305,8 +305,8 @@ function startAmbient(){
   ambBubbleTimer = setInterval(()=>{
     if (muted || !actx) return;
     melI = Math.max(0, Math.min(scale.length-1, melI + (Math.random()<0.5?1:-1)*(Math.random()<0.72?1:2)));
-    bell(scale[melI], 0.95, 0.05);
-    if (Math.random()<0.35) bell(scale[melI]*1.5, 0.7, 0.022);   // soft harmony shimmer
+    bell(scale[melI], 0.95, 0.034);
+    if (Math.random()<0.35) bell(scale[melI]*1.5, 0.7, 0.016);   // soft harmony shimmer
   }, 900);
 }
 function _env(g, t0, vol, dur){
@@ -901,9 +901,9 @@ function update(dt){
 
   if (mode==='multi' && bots.length && fish.length){
     for (const bot of bots){ bot.fireT -= dt;
-      if (bot.fireT<=0){ bot.fireT = rand(0.3,0.85); const tgt = fish[(Math.random()*fish.length)|0];
-        if (tgt){ const ang=Math.atan2(tgt.y-bot.seat.y, tgt.x-bot.seat.x)+(Math.random()-0.5)*0.10;
-          bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(ang)*640, vy:Math.sin(ang)*640, dmg:2, r:5, life:1.3, trail:[], color:bot.col, owner:bot }); } } }
+      if (bot.fireT<=0){ bot.fireT = rand(0.14,0.20); const tgt = fish[(Math.random()*fish.length)|0];   // same cadence as a player holding fire
+        if (tgt){ const ang=Math.atan2(tgt.y-bot.seat.y, tgt.x-bot.seat.x)+(Math.random()-0.5)*0.05;
+          bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(ang)*840, vy:Math.sin(ang)*840, dmg:3, r:4, life:1.4, trail:[], color:bot.col, owner:bot }); } } }
   }
   // auto-fire while holding
   if (firing){
