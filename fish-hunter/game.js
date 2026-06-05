@@ -545,8 +545,8 @@ function killFish(f){
       r:rand(1.5,4.5), life:rand(.4,.9), max:.9,
       c: Math.random()<0.5 ? f.color : f.glow });
   }
-  // gold coin sparkle burst
-  for (let i=0;i<Math.min(f.coins,6);i++){
+  // gold coin sparkle burst — only for fish YOU killed (not other players')
+  if (!(owner && owner.score!==undefined)) for (let i=0;i<Math.min(f.coins,6);i++){
     const a=Math.random()*6.28, sp=rand(60,200);
     particles.push({ x:f.x, y:f.y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp-60,
       r:rand(1.5,3), life:rand(.5,1), max:1, c:'#ffce63', grav:280 });
@@ -567,7 +567,7 @@ function killFish(f){
   rings.push({ x:f.x, y:f.y, r:f.size*0.4, max:f.size*(f.boss?9:5), life:.7, c:'#ffffff' });
   shake = Math.min(shake + (f.boss?18:f.value>=70?11:f.value>=30?7:3), 24);
   if (big){ flash = f.boss?0.55:0.38; flashColor = f.glow; hitStop = f.boss?0.09:0.05; }
-  spawnCoinFx(f.x, f.y, Math.min(f.coins, f.boss?16:6));
+  if (!(owner && owner.score!==undefined)) spawnCoinFx(f.x, f.y, Math.min(f.coins, f.boss?16:6));   // only your coins show
   for (let i=0;i<4;i++){ const a=Math.random()*6.28, dd=rand(10,f.size*1.8);
     particles.push({ x:f.x+Math.cos(a)*dd, y:f.y+Math.sin(a)*dd, vx:0,vy:0, r:rand(2,4), life:rand(.3,.6), max:.6, c:'#fff7d0', star:true }); }
   waves.push({x:f.x,y:f.y,r:f.size*0.4,max:f.size*3 + f.value*2.2,life:big?.6:.42,maxLife:big?.6:.42});
