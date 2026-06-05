@@ -315,9 +315,15 @@ function sfxJackpot(){ [523,659,784,1046,1318].forEach((fr,i)=>setTimeout(()=>bl
 function sfxAlert(){ blip({freq:170,type:'sawtooth',dur:0.7,vol:0.16,slideTo:110}); setTimeout(()=>blip({freq:190,type:'sawtooth',dur:0.7,vol:0.16,slideTo:120}),360); noiseBurst({dur:0.4,vol:0.09,freq:280,type:'lowpass'}); }
 function toggleMute(){
   muted = !muted;
+  if (!muted) initAudio();                       // a click is a valid gesture: start audio
+  if (actx && actx.state === 'suspended') actx.resume();
   if (masterGain) masterGain.gain.value = muted ? 0 : 0.9;
   const b = document.getElementById('mute-btn'); if (b) b.textContent = muted ? '🔇' : '🔊';
 }
+// Kick the ambient track to life on the very first interaction with the page
+function _firstGesture(){ if (!muted) initAudio(); window.removeEventListener('pointerdown', _firstGesture); window.removeEventListener('keydown', _firstGesture); }
+window.addEventListener('pointerdown', _firstGesture);
+window.addEventListener('keydown', _firstGesture);
 
 // ── helpers ──────────────────────────────────────────────────────
 const rand = (a,b) => a + Math.random()*(b-a);
@@ -980,8 +986,7 @@ function updateBgLife(dt){
   for (const f of bgFish){ f.t+=dt; f.x+=f.vx*dt; f.y = f.baseY + Math.sin(f.t*f.freq+f.phase)*f.amp; }
   bgFish = bgFish.filter(f => f.x>-70 && f.x<W+70);
   while (bgFish.length < 5) spawnBgFish();
-  if (lurker){ lurker.t+=dt; lurker.x+=lurker.vx*dt; if (lurker.x < -W*0.5 || lurker.x > W*1.5) lurker=null; }
-  else { lurkerTimer-=dt; if (lurkerTimer<=0){ spawnLurker(); lurkerTimer = rand(16,30); } }
+  lurker = null; // monster silhouette removed per request
 }
 function drawLurker(L){
   const s=L.size, ts=L.t;
@@ -1058,7 +1063,7 @@ function drawKelp(bx, by, h, w, ph, ts){
 }
 function drawSceneFX(ts, vis){
   // glowing eyes lurking in the rocks/caves
-  const EYES=[[0.05,0.74,'#ff5a3a',0.3],[0.94,0.70,'#ffcf3a',2.1],[0.20,0.87,'#5affd2',4.0],[0.82,0.85,'#ff5a3a',5.2],[0.5,0.93,'#bf7aff',1.4]];
+  const EYES=[[0.94,0.70,'#ffcf3a',2.1],[0.20,0.87,'#5affd2',4.0],[0.5,0.93,'#bf7aff',1.4]];
   ctx.save();
   for (const e of EYES){
     const blink=Math.sin(ts*1.7 + e[3]*3);

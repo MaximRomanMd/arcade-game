@@ -435,3 +435,6 @@ body.playing #weapon-bar{display:flex;}
 /* Ensure hidden always beats the layout display on these panels (specificity fix) */
 .rooms-view.hidden{display:none !important;}
 #lobby-landing.hidden{display:none !important;}
+
+/* landing wrapper must not affect layout — restore original lobby positioning */
+#lobby-landing{display:contents;}
