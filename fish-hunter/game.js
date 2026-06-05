@@ -449,7 +449,7 @@ function tryFire(){
     bullets.push({
       x:muzzleX, y:muzzleY,
       vx:Math.cos(a+off)*speed, vy:Math.sin(a+off)*speed,
-      dmg: bdmg, r: 4 + (fireMode==='focus' ? wpnLevel*1.4 : wpnLevel), life: 1.4, trail: [], color: currentBulletColor(),
+      dmg: bdmg, r: 4 + (fireMode==='focus' ? wpnLevel*1.4 : wpnLevel), life: 3.0, trail: [], color: currentBulletColor(),
     });
   }
   // muzzle flash particles
@@ -914,7 +914,7 @@ function update(dt){
           const base = Math.atan2(tgt.y-bot.seat.y, tgt.x-bot.seat.x) + (Math.random()-0.5)*0.09;  // human aim wobble
           const pellets=3, speed=840, spread=0.07;
           for (let i=0;i<pellets;i++){ const off=(i-(pellets-1)/2)*spread;
-            bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(base+off)*speed, vy:Math.sin(base+off)*speed, dmg:1, r:7, life:1.4, trail:[], color:currentBulletColor(), owner:bot }); }
+            bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(base+off)*speed, vy:Math.sin(base+off)*speed, dmg:1, r:7, life:3.0, trail:[], color:currentBulletColor(), owner:bot }); }
         } }
     }
   }
