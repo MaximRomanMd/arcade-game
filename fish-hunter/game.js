@@ -1001,6 +1001,49 @@ function drawKelp(bx, by, h, w, ph, ts){
   for (let i=0;i<=N;i++){ const t=i/N, yy=by-t*h, sway=Math.sin(ts*1.15+ph+t*2.6)*(w*2.4)*t; i===0?ctx.moveTo(bx+sway,yy):ctx.lineTo(bx+sway,yy); }
   ctx.stroke();
 }
+function drawSceneFX(ts, vis){
+  // glowing eyes lurking in the rocks/caves
+  const EYES=[[0.05,0.74,'#ff5a3a',0.3],[0.94,0.70,'#ffcf3a',2.1],[0.20,0.87,'#5affd2',4.0],[0.82,0.85,'#ff5a3a',5.2],[0.5,0.93,'#bf7aff',1.4]];
+  ctx.save();
+  for (const e of EYES){
+    const blink=Math.sin(ts*1.7 + e[3]*3);
+    const on = blink < -0.8 ? 0 : (0.5+0.5*Math.sin(ts*2.5+e[3]));
+    if (on<=0.05) continue;
+    const ex=W*e[0], ey=H*e[1], er=3.0;
+    ctx.globalAlpha=on*0.9*vis; ctx.shadowColor=e[2]; ctx.shadowBlur=13; ctx.fillStyle=e[2];
+    ctx.beginPath(); ctx.arc(ex,ey,er,0,6.28); ctx.fill();
+    ctx.beginPath(); ctx.arc(ex+er*2.7,ey-1,er*0.92,0,6.28); ctx.fill();
+  }
+  ctx.shadowBlur=0; ctx.restore();
+  // bubble vents rising from the reef
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  const VENTS=[[0.10,0.84],[0.89,0.80],[0.30,0.92],[0.62,0.90]];
+  for (let vi=0;vi<VENTS.length;vi++){
+    const vx=W*VENTS[vi][0], vy=H*VENTS[vi][1];
+    for (let i=0;i<5;i++){
+      const prog=((ts*0.38 + i*0.2 + vi*0.17)%1+1)%1;
+      const by=vy-prog*H*0.30, bx=vx+Math.sin(ts*2+i+vi)*5, br=1.3+(1-prog)*1.2;
+      ctx.globalAlpha=0.16*(1-prog)*vis; ctx.fillStyle='rgba(200,240,250,0.6)';
+      ctx.beginPath(); ctx.arc(bx,by,br,0,6.28); ctx.fill();
+    }
+  }
+  ctx.restore();
+  // light glints on coral
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  const GL=[[0.16,0.80],[0.84,0.77],[0.42,0.90],[0.58,0.87],[0.06,0.58],[0.93,0.60]];
+  for (let gi=0;gi<GL.length;gi++){
+    const tt=((ts*0.6 + gi*1.7)%4);
+    if (tt>0.6) continue;
+    const a=Math.sin(tt/0.6*Math.PI)*0.8*vis;
+    if (a<=0) continue;
+    const gx=W*GL[gi][0], gy=H*GL[gi][1], r=2+a*4;
+    ctx.globalAlpha=a; ctx.fillStyle='rgba(255,255,245,0.95)'; ctx.shadowColor='#fff'; ctx.shadowBlur=9;
+    ctx.beginPath(); ctx.arc(gx,gy,r*0.5,0,6.28); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,245,'+a.toFixed(3)+')'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(gx-r*2,gy); ctx.lineTo(gx+r*2,gy); ctx.moveTo(gx,gy-r*2); ctx.lineTo(gx,gy+r*2); ctx.stroke();
+  }
+  ctx.shadowBlur=0; ctx.restore();
+}
 function drawWaterLife(ts, d){
   if (d < 0.85) return;
   const vis = Math.min(1,(d-0.85)/0.15);
@@ -1045,6 +1088,7 @@ function drawWaterLife(ts, d){
     ctx.drawImage(img, cx,cy,fw,fh, dx,dy,dW,dH);
   }
   ctx.globalAlpha=1; ctx.restore();
+  drawSceneFX(ts, vis);
 }
 function drawBackground(time){
   const ts = time*0.001;
