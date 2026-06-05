@@ -133,6 +133,7 @@ let fireMode = 'spread';
 let credits = START_CREDITS;
 let creditsShown = START_CREDITS;
 let score = 0, timeLeft = ROUND_TIME, shake = 0, flash = 0, flashColor = '#28e0c8';
+let matchStartT = 0;   // wall-clock anchor so the timer is REAL time (keeps running if the tab is backgrounded)
 let combo = 1, comboTimer = 0, comboKills = 0;
 let brokeT = 0;
 let spawnTimer = 0, elapsed = 0;
@@ -894,7 +895,7 @@ function update(dt){
   if (cannonHome){ cannon.x = cannonHome.x; cannon.y = cannonHome.y; } else { cannon.x = W/2; cannon.y = H - 40; }
 
   if (mode==='tournament' || mode==='multi'){
-    timeLeft -= dt;
+    timeLeft = ROUND_TIME - (performance.now() - matchStartT)/1000;   // real elapsed time
     if (timeLeft <= 0){ timeLeft = 0; return endGame(); }
     if (mode==='tournament' && credits < 1){ brokeT += dt; if (brokeT > 0.8) return endGame(); } else brokeT = 0;
   }
@@ -1434,7 +1435,7 @@ function pickSeat(px,py){
     chosenSeat=sX; cannonHome={x:sX.x,y:sX.y}; cannon.x=sX.x; cannon.y=sX.y;
     bots=[]; const _bn=['Sharky','DeepBlue','Kraken','FinJet','AbyssAce','TideWolf','Coralis','NeptuneX'], _bc=['#ff8a5b','#b07bff','#5affd2','#ff6f9c']; let _ni=Math.random()*_bn.length|0,_ci=0;
     for (const s2 of seats){ if (s2!==chosenSeat){ bots.push({ seat:s2, name:_bn[_ni++ % _bn.length], score:0, fireT:rand(0.3,1.0), col:_bc[_ci++ % _bc.length], aimA:(s2.y<H*0.4?Math.PI/2:-Math.PI/2) }); } }
-    matchSeed=(Math.random()*1e9)|0; setSeed(matchSeed); for(let i=0;i<5;i++) spawnFish(false); phase='playing'; running=true; brokeT=0; initAudio(); return;
+    matchSeed=(Math.random()*1e9)|0; setSeed(matchSeed); for(let i=0;i<5;i++) spawnFish(false); phase='playing'; running=true; brokeT=0; matchStartT=performance.now(); initAudio(); return;
   } }
 }
 function drawBots(){
@@ -1820,7 +1821,7 @@ requestAnimationFrame(loop);
 // ── start / end ──────────────────────────────────────────────────
 function startGame(){
   fish=[]; bullets=[]; particles=[]; pops=[]; rings=[];
-  score=0; credits=((mode==='free'||mode==='multi')?100000:START_CREDITS); creditsShown=credits; timeLeft=ROUND_TIME; brokeT=0;
+  score=0; credits=((mode==='free'||mode==='multi')?100000:START_CREDITS); creditsShown=credits; timeLeft=ROUND_TIME; brokeT=0; matchStartT=performance.now();
   combo=1; comboKills=0; comboTimer=0; spawnTimer=0; elapsed=0;
   shake=0; flash=0; wpnLevel=1; firing=false;
   powerups=[]; puTimer=18; freezeT=0; doubleT=0; multiT=0; cannonHome=null; bots=[];
@@ -1851,6 +1852,7 @@ function exitToMenu(){
   document.getElementById('overlay-start').classList.remove('hidden');
 }
 
+setInterval(()=>{ if (running && (mode==='tournament'||mode==='multi') && matchStartT){ if (performance.now()-matchStartT >= ROUND_TIME*1000){ timeLeft=0; endGame(); } } }, 1000);
 function endGame(){
   running = false; firing = false; phase = 'over';
   document.body.classList.remove('playing');
