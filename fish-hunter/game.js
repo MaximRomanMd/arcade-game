@@ -120,6 +120,7 @@ function pickType(elapsedFrac){
 
 // ── game state ───────────────────────────────────────────────────
 let mode = 'tournament';
+let multiFormat = '4p';   // '1v1' | '4p' (table size for multiplayer)
 let running = false;
 let fish = [], bullets = [], particles = [], pops = [], rings = [], bubbles = [];
 let aim = { x: W/2, y: H*0.4 };
@@ -1695,7 +1696,9 @@ document.querySelectorAll('#ov-mode .mode-btn').forEach(btn=>{
 document.getElementById('btn-start').onclick = ()=>{ mode='tournament'; startGame(); };
 const _sm = document.getElementById('soon-msg');
 function showSoon(w){ if(_sm){ _sm.textContent = w + ' - coming soon'; _sm.classList.add('show'); clearTimeout(showSoon._t); showSoon._t=setTimeout(()=>_sm.classList.remove('show'),1900); } }
-{ const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>{ mode='multi'; startGame(); }; }
+{ const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-multi'); if(o) o.classList.remove('hidden'); }; }
+document.querySelectorAll('#multi-mode .mode-btn').forEach(b=>{ b.onclick=()=>{ multiFormat=b.dataset.fmt; const o=document.getElementById('overlay-multi'); if(o) o.classList.add('hidden'); mode='multi'; startGame(); }; });
+{ const b=document.getElementById('multi-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-multi'); if(o) o.classList.add('hidden'); }; }
 { const b=document.getElementById('btn-demo'); if(b) b.onclick=()=>{ mode='free'; startGame(); }; }
 { const b=document.getElementById('btn-credits'); if(b) b.onclick=()=>{ renderCredits(); const o=document.getElementById('overlay-credits'); if(o) o.classList.remove('hidden'); }; }
 { const b=document.getElementById('credits-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-credits'); if(o) o.classList.add('hidden'); }; }
