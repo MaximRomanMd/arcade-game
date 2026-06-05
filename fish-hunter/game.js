@@ -123,7 +123,14 @@ let mode = 'tournament';
 let multiFormat = '4p';
 let multiSeat = 0;
 let cannonHome = null, seats = [], chosenSeat = null;
-let wallet = 10000, bots = [];
+let wallet = (parseFloat(localStorage.getItem('fishhunter_wallet')) || 10000), bots = [];
+let roomEntry = 0, roomPrize = 0;
+function saveWallet(){
+  try { localStorage.setItem('fishhunter_wallet', String(wallet)); } catch(e){}
+  const _a=document.getElementById('bal-val');       if(_a) _a.textContent=formatNum(wallet);
+  const _b=document.getElementById('lobby-wallet');  if(_b) _b.textContent=formatNum(wallet);
+  const _c=document.getElementById('lobby-wallet2'); if(_c) _c.textContent=formatNum(wallet);
+}
 let running = false;
 let fish = [], bullets = [], particles = [], pops = [], rings = [], bubbles = [];
 let aim = { x: W/2, y: H*0.4 };
@@ -822,7 +829,7 @@ function renderRooms(){
   let html='';
   prices.forEach((pr,pi)=>{ fmts.forEach(f=>{
     const net=pr*f.seats*0.90, top=f.k==='1v1'?net:net*0.5, filled=(pi+(f.k==='4p'?2:1))%f.seats;
-    html+='<div class="room-card" data-fmt="'+f.k+'">'
+    html+='<div class="room-card" data-fmt="'+f.k+'" data-entry="'+pr+'" data-prize="'+top.toFixed(2)+'">'
       +'<div class="room-logo"><img src="assets/logo.png?v=1" alt=""></div>'
       +'<div class="room-mid"><div class="room-name">'+f.name+'</div>'
       +'<div class="room-meta">$'+pr.toFixed(2)+' entry &middot; 90s &middot; seeded</div>'
@@ -842,6 +849,9 @@ function renderRooms(){
       if (!card) return;
       ev.preventDefault(); ev.stopPropagation();
       try {
+        const entry = parseFloat(card.dataset.entry||'0'), prize = parseFloat(card.dataset.prize||'0');
+        if (wallet < entry){ alert('Balance too low for this room (needs $'+entry.toFixed(2)+').'); return; }
+        wallet -= entry; roomEntry = entry; roomPrize = prize; saveWallet();   // pay the entry fee
         multiFormat = card.dataset.fmt || '4p';
         const os = document.getElementById('overlay-start'); if (os) os.classList.add('hidden');
         startSeating(multiFormat);
@@ -1854,6 +1864,7 @@ function exitToMenu(){
 
 setInterval(()=>{ if (running && (mode==='tournament'||mode==='multi') && matchStartT){ if (performance.now()-matchStartT >= ROUND_TIME*1000){ timeLeft=0; endGame(); } } }, 1000);
 function endGame(){
+  if (phase === 'over') return;            // guard: never settle a match twice
   running = false; firing = false; phase = 'over';
   document.body.classList.remove('playing');
   // persist
@@ -1893,8 +1904,21 @@ function endGame(){
     }).join('');
   } else lbEl.innerHTML = '';
 
-  { const _c=document.querySelector('#overlay-end .ov-card'); if(_c) _c.classList.toggle('record', isPB); }
-  if (isPB) celebrate();
+  // ── multiplayer settlement: winner (highest score) takes the prize ──
+  if (mode==='multi'){
+    const topBot = bots.length ? Math.max(...bots.map(b=>b.score)) : 0;
+    const won = score >= topBot;
+    if (won){ wallet += roomPrize; }
+    saveWallet();
+    pbEl.innerHTML = won
+      ? `<span class="end-pb-hit">\u{1F3C6} YOU WON +$${roomPrize.toFixed(2)}</span>`
+      : `Not 1st this time — entry $${roomEntry.toFixed(2)} lost`;
+    dEl.textContent = `Balance: $${formatNum(wallet)}`;
+    if (won){ const _c=document.querySelector('#overlay-end .ov-card'); if(_c) _c.classList.add('record'); celebrate(); }
+  }
+
+  { const _c=document.querySelector('#overlay-end .ov-card'); if(_c && mode!=='multi') _c.classList.toggle('record', isPB); }
+  if (isPB && mode!=='multi') celebrate();
   document.getElementById('overlay-end').classList.remove('hidden');
 }
 
