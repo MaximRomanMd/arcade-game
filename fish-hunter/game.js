@@ -777,6 +777,7 @@ function renderCredits(){
 function renderRooms(){
   const list=document.getElementById('rooms-list'); if(!list) return;
   const _wb=document.getElementById('lobby-wallet'); if(_wb) _wb.textContent=formatNum(wallet);
+  const _wb2=document.getElementById('lobby-wallet2'); if(_wb2) _wb2.textContent=formatNum(wallet);
   const prices=[0.5,1,5,10,50];
   const fmts=[{k:'1v1',name:'1v1 DUEL',seats:2},{k:'4p',name:'4 PLAYERS',seats:4}];
   let html='';
@@ -812,6 +813,7 @@ function renderRooms(){
   }
 }
 function renderMenu(){
+  { const _ll=document.getElementById('lobby-landing'), _rv=document.getElementById('rooms-view'); if(_ll)_ll.classList.remove('hidden'); if(_rv)_rv.classList.add('hidden'); }
   if (logoImg.complete && logoImg.naturalWidth > 0){
     const li = document.getElementById('menu-logo-img');
     const lt = document.getElementById('menu-logo-text');
@@ -1877,6 +1879,8 @@ function takeSeat(i,el){
 { const b=document.getElementById('btn-demo'); if(b) b.onclick=()=>{ mode='free'; startGame(); }; }
 { const b=document.getElementById('btn-credits'); if(b) b.onclick=()=>{ renderCredits(); const o=document.getElementById('overlay-credits'); if(o) o.classList.remove('hidden'); }; }
 { const b=document.getElementById('btn-practice'); if(b) b.onclick=()=>{ document.getElementById('overlay-start').classList.add('hidden'); mode='free'; startGame(); }; }
+{ const b=document.getElementById('btn-go-multi'); if(b) b.onclick=()=>{ const ll=document.getElementById('lobby-landing'), rv=document.getElementById('rooms-view'); if(ll)ll.classList.add('hidden'); if(rv)rv.classList.remove('hidden'); renderRooms(); }; }
+{ const b=document.getElementById('btn-rooms-back'); if(b) b.onclick=()=>{ const ll=document.getElementById('lobby-landing'), rv=document.getElementById('rooms-view'); if(rv)rv.classList.add('hidden'); if(ll)ll.classList.remove('hidden'); }; }
 { const b=document.getElementById('credits-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-credits'); if(o) o.classList.add('hidden'); }; }
 document.getElementById('btn-again').onclick = () => { startGame(); };
 document.getElementById('exit-btn').onclick = exitToMenu;

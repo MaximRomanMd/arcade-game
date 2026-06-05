@@ -82,13 +82,20 @@
     <img id="menu-logo-img" class="menu-logo-img2" alt="ABYSS HUNTER" />
     <div class="ov-logo lobby2-logotext" id="menu-logo-text">ABYSS<span>HUNTER</span></div>
 
-    <div class="rooms-head">
-      <div class="rooms-title">CHOOSE A ROOM</div>
-      <div class="rooms-sub">Same seeded board for everyone &middot; best score wins &middot; 90s</div>
+    <div id="lobby-landing" class="lobby-landing">
       <div class="wallet-bar">BALANCE&nbsp; <strong>$<span id="lobby-wallet">10000</span></strong></div>
+      <button id="btn-go-multi" class="big-btn multi-cta">MULTIPLAYER</button>
+      <a id="btn-practice" class="practice-link">Free practice &mdash; solo, no entry &rarr;</a>
     </div>
-    <div id="rooms-list" class="rooms-list"></div>
-    <a id="btn-practice" class="practice-link">Free practice &mdash; solo, no entry &rarr;</a>
+    <div id="rooms-view" class="rooms-view hidden">
+      <div class="rooms-head">
+        <div class="rooms-title">CHOOSE A ROOM</div>
+        <div class="rooms-sub">Same seeded board for everyone &middot; best score wins &middot; 90s</div>
+        <div class="wallet-bar">BALANCE&nbsp; <strong>$<span id="lobby-wallet2">10000</span></strong></div>
+      </div>
+      <div id="rooms-list" class="rooms-list"></div>
+      <button id="btn-rooms-back" class="rooms-back">&larr; Back to lobby</button>
+    </div>
     <div id="soon-msg" class="soon-msg"></div>
   </div>
 </div>
