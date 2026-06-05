@@ -791,7 +791,25 @@ function renderRooms(){
       +'<button class="room-join">JOIN</button></div></div>';
   }); });
   list.innerHTML=html;
-  list.querySelectorAll('.room-card').forEach(c=>{ c.querySelector('.room-join').onclick=()=>{ multiFormat=c.dataset.fmt; document.getElementById('overlay-start').classList.add('hidden'); startSeating(multiFormat); }; });
+  // Event delegation: one robust listener on the container. A click anywhere on a
+  // room card (or its JOIN button) enters that room. Survives re-renders and avoids
+  // per-button wiring that a CSS overlay could swallow.
+  if (!list._joinWired){
+    list._joinWired = true;
+    list.style.cursor = 'pointer';
+    const enterRoom = (ev)=>{
+      const card = ev.target && ev.target.closest ? ev.target.closest('.room-card') : null;
+      if (!card) return;
+      ev.preventDefault(); ev.stopPropagation();
+      try {
+        multiFormat = card.dataset.fmt || '4p';
+        const os = document.getElementById('overlay-start'); if (os) os.classList.add('hidden');
+        startSeating(multiFormat);
+      } catch(err){ console.error('JOIN failed:', err); alert('Join error: '+err.message); }
+    };
+    list.addEventListener('click', enterRoom);
+    list.addEventListener('touchend', enterRoom, {passive:false});
+  }
 }
 function renderMenu(){
   if (logoImg.complete && logoImg.naturalWidth > 0){
