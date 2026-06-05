@@ -899,11 +899,19 @@ function update(dt){
     if (mode==='tournament' && credits < 1){ brokeT += dt; if (brokeT > 0.8) return endGame(); } else brokeT = 0;
   }
 
-  if (mode==='multi' && bots.length && fish.length){
-    for (const bot of bots){ bot.fireT -= dt;
-      if (bot.fireT<=0){ bot.fireT = rand(0.14,0.20); const tgt = fish[(Math.random()*fish.length)|0];   // same cadence as a player holding fire
+  if (mode==='multi' && bots.length){
+    for (const bot of bots){
+      // smooth barrel tracking toward the nearest fish (visual aim)
+      if (fish.length){
+        let nf=null, nd=1e18;
+        for (const f of fish){ const dd=(f.x-bot.seat.x)*(f.x-bot.seat.x)+(f.y-bot.seat.y)*(f.y-bot.seat.y); if (dd<nd){ nd=dd; nf=f; } }
+        if (nf){ const want=Math.atan2(nf.y-bot.seat.y, nf.x-bot.seat.x); let da=want-bot.aimA; while(da>Math.PI)da-=6.2832; while(da<-Math.PI)da+=6.2832; bot.aimA+=da*Math.min(1,dt*7); }
+      }
+      bot.fireT -= dt;
+      if (fish.length && bot.fireT<=0){ bot.fireT = rand(0.14,0.20); const tgt = fish[(Math.random()*fish.length)|0];   // same weapon as the player: 3 dmg, 840 speed
         if (tgt){ const ang=Math.atan2(tgt.y-bot.seat.y, tgt.x-bot.seat.x)+(Math.random()-0.5)*0.05;
-          bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(ang)*840, vy:Math.sin(ang)*840, dmg:3, r:4, life:1.4, trail:[], color:bot.col, owner:bot }); } } }
+          bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(ang)*840, vy:Math.sin(ang)*840, dmg:3, r:4, life:1.4, trail:[], color:bot.col, owner:bot }); } }
+    }
   }
   // auto-fire while holding
   if (firing){
@@ -1420,24 +1428,36 @@ function pickSeat(px,py){
   for (const sX of seats){ if (Math.hypot(sX.x-px, sX.y-py) < 60){
     chosenSeat=sX; cannonHome={x:sX.x,y:sX.y}; cannon.x=sX.x; cannon.y=sX.y;
     bots=[]; const _bn=['Sharky','DeepBlue','Kraken','FinJet','AbyssAce','TideWolf','Coralis','NeptuneX'], _bc=['#ff8a5b','#b07bff','#5affd2','#ff6f9c']; let _ni=Math.random()*_bn.length|0,_ci=0;
-    for (const s2 of seats){ if (s2!==chosenSeat){ bots.push({ seat:s2, name:_bn[_ni++ % _bn.length], score:0, fireT:rand(0.3,1.0), col:_bc[_ci++ % _bc.length] }); } }
+    for (const s2 of seats){ if (s2!==chosenSeat){ bots.push({ seat:s2, name:_bn[_ni++ % _bn.length], score:0, fireT:rand(0.3,1.0), col:_bc[_ci++ % _bc.length], aimA:(s2.y<H*0.4?Math.PI/2:-Math.PI/2) }); } }
     matchSeed=(Math.random()*1e9)|0; setSeed(matchSeed); for(let i=0;i<5;i++) spawnFish(false); phase='playing'; running=true; brokeT=0; initAudio(); return;
   } }
 }
 function drawBots(){
-  ctx.save(); ctx.textAlign='center';
-  for (const bot of bots){ const s=bot.seat, dirY=s.y<H*0.4?1:-1;
-    ctx.save(); ctx.translate(s.x,s.y);
-    ctx.fillStyle='rgba(10,28,38,0.92)'; ctx.strokeStyle=bot.col; ctx.lineWidth=2.5;
-    ctx.beginPath(); ctx.arc(0,0,14,0,6.28); ctx.fill(); ctx.stroke();
-    ctx.lineWidth=5; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,dirY*20); ctx.stroke();
-    ctx.restore();
-    const by=s.y<H*0.4?s.y+36:s.y-32;
-    ctx.font='800 12px Segoe UI,sans-serif'; ctx.shadowColor='rgba(0,0,0,.8)'; ctx.shadowBlur=4;
+  const _cimg = currentCannonImg();
+  for (const bot of bots){
+    const s=bot.seat, a=(bot.aimA!==undefined ? bot.aimA : (s.y<H*0.4?Math.PI/2:-Math.PI/2));
+    if (_cimg){
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(a + Math.PI/2);
+      ctx.shadowColor = bot.col; ctx.shadowBlur = 12;
+      const _cw = CN_TH * ((_cimg.width/_cimg.height) || 0.756);
+      ctx.drawImage(_cimg, -_cw/2, -CN_JOINT*CN_TH, _cw, CN_TH);
+      ctx.restore();
+    } else {
+      ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(a);
+      ctx.shadowColor='#28e0c8'; ctx.shadowBlur=14;
+      const bg=ctx.createLinearGradient(0,-9,0,9); bg.addColorStop(0,'#2bf0d6'); bg.addColorStop(1,'#0b6f66');
+      ctx.fillStyle=bg; roundRect(0,-9,cannon.len,18,8); ctx.fill(); ctx.restore();
+    }
+    // name + score label, clear of the cannon body
+    const by = s.y<H*0.4 ? s.y + CN_TH*0.42 + 14 : s.y - CN_TH*0.42 - 6;
+    ctx.save(); ctx.textAlign='center';
+    ctx.font='800 12px Segoe UI,sans-serif'; ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=4;
     ctx.fillStyle=bot.col; ctx.fillText(bot.name, s.x, by);
-    ctx.fillStyle='#ffce63'; ctx.fillText(formatNum(bot.score), s.x, by+15); ctx.shadowBlur=0;
+    ctx.fillStyle='#ffce63'; ctx.fillText(formatNum(bot.score), s.x, by+15);
+    ctx.restore();
   }
-  ctx.restore();
 }
 function drawScoreboard(){
   const ps=[{n:NICK,sc:score,me:true}].concat(bots.map(b=>({n:b.name,sc:b.score})));
