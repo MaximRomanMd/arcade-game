@@ -518,9 +518,9 @@ function hurtFish(f, dmg, bx, by, owner){
   f.hp -= dmg; f.hitFlash = 0.18; f.killer = owner;
   stats.hits++;
   sfxHit();
-  for (let i=0;i<9;i++){ const a=Math.random()*6.28, sp=rand(70,240);
-    particles.push({ x:bx, y:by, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, r:rand(1,2.8), life:rand(.18,.38), max:.38, c: Math.random()<0.45?'#ffffff':f.glow }); }
-  particles.push({ x:bx, y:by, vx:0, vy:0, r:f.size*0.45, life:.1, max:.1, c:'#ffffff' });
+  // damage shown ONLY via the red silhouette tint (f.hitFlash) — no white flash.
+  for (let i=0;i<4;i++){ const a=Math.random()*6.28, sp=rand(50,150);
+    particles.push({ x:bx, y:by, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, r:rand(1,2), life:rand(.12,.24), max:.24, c:'#ff6a5a' }); }
   if (f.hp <= 0) killFish(f);
 }
 
