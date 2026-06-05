@@ -123,6 +123,7 @@ let mode = 'tournament';
 let multiFormat = '4p';
 let multiSeat = 0;
 let cannonHome = null, seats = [], chosenSeat = null;
+let wallet = 10000, bots = [];
 let running = false;
 let fish = [], bullets = [], particles = [], pops = [], rings = [], bubbles = [];
 let aim = { x: W/2, y: H*0.4 };
@@ -476,8 +477,8 @@ function decayCombo(dt){
 }
 
 // ── kill / hit fx ────────────────────────────────────────────────
-function hurtFish(f, dmg, bx, by){
-  f.hp -= dmg; f.hitFlash = 0.18;
+function hurtFish(f, dmg, bx, by, owner){
+  f.hp -= dmg; f.hitFlash = 0.18; f.killer = owner;
   stats.hits++;
   sfxHit();
   for (let i=0;i<9;i++){ const a=Math.random()*6.28, sp=rand(70,240);
@@ -487,14 +488,17 @@ function hurtFish(f, dmg, bx, by){
 }
 
 function killFish(f){
-  const mult = doubleT > 0 ? 2 : 1;
-  const gained = Math.round(f.value * combo) * mult;
-  score += gained;
-  credits += f.coins * mult;
-  stats.kills++; stats.coins += f.coins;
+  const owner = f.killer, mult = doubleT > 0 ? 2 : 1;
+  let gained;
+  if (owner && owner.score!==undefined){ gained = Math.round(f.value) * mult; owner.score += gained; }
+  else {
+    gained = Math.round(f.value * combo) * mult;
+    score += gained; credits += f.coins * mult;
+    stats.kills++; stats.coins += f.coins;
+    if (f.value > stats.biggestVal){ stats.biggestVal = f.value; stats.biggest = labelFor(f.key); }
+    addKillCombo();
+  }
   sfxKill(f.boss || f.shiny); sfxCoin();
-  if (f.value > stats.biggestVal){ stats.biggestVal = f.value; stats.biggest = labelFor(f.key); }
-  addKillCombo();
 
   // explosion particles
   const n = f.boss ? 38 : f.value>=70 ? 24 : f.value>=30 ? 16 : 9;
@@ -514,7 +518,7 @@ function killFish(f){
   rings.push({ x:f.x, y:f.y, r:f.size, max:f.size*(f.boss?6:3.4), life:.5, c:f.glow });
   // score popup
   pops.push({ x:f.x, y:f.y, txt:'+'+gained, life:.9, max:.9,
-    c: combo>1 ? '#ffce63' : '#aef9ec', big:f.boss||f.shiny||f.value>=70 });
+    c: (f.killer&&f.killer.score!==undefined)?f.killer.col:(combo>1?'#ffce63':'#aef9ec'), big:f.boss||f.shiny||f.value>=70 });
   // extra juice: core flash, shards, second shockwave
   const big = f.boss || f.value >= 30;
   particles.push({ x:f.x, y:f.y, vx:0, vy:0, r:f.size*(f.boss?2.6:1.6), life:.18, max:.18, c:'#ffffff' });
@@ -772,6 +776,7 @@ function renderCredits(){
 
 function renderRooms(){
   const list=document.getElementById('rooms-list'); if(!list) return;
+  const _wb=document.getElementById('lobby-wallet'); if(_wb) _wb.textContent=formatNum(wallet);
   const prices=[0.5,1,5,10,50];
   const fmts=[{k:'1v1',name:'1v1 DUEL',seats:2},{k:'4p',name:'4 PLAYERS',seats:4}];
   let html='';
@@ -835,6 +840,12 @@ function update(dt){
     if (mode==='tournament' && credits < 1){ brokeT += dt; if (brokeT > 0.8) return endGame(); } else brokeT = 0;
   }
 
+  if (mode==='multi' && bots.length && fish.length){
+    for (const bot of bots){ bot.fireT -= dt;
+      if (bot.fireT<=0){ bot.fireT = rand(0.3,0.85); const tgt = fish[(Math.random()*fish.length)|0];
+        if (tgt){ const ang=Math.atan2(tgt.y-bot.seat.y, tgt.x-bot.seat.x)+(Math.random()-0.5)*0.10;
+          bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(ang)*640, vy:Math.sin(ang)*640, dmg:2, r:5, life:1.3, trail:[], color:bot.col, owner:bot }); } } }
+  }
   // auto-fire while holding
   if (firing){
     fireTimer -= dt;
@@ -898,7 +909,7 @@ function update(dt){
         const ex=s*1.6, ey=s*0.82, lx=b.x-f.x, ly=b.y-f.y;
         hit = (lx*lx)/(ex*ex)+(ly*ly)/(ey*ey) <= 1;
       }
-      if (hit){ hurtFish(f, b.dmg, b.x, b.y); b.life = 0; break; }
+      if (hit){ hurtFish(f, b.dmg, b.x, b.y, b.owner); b.life = 0; break; }
     }
     if (b.life>0) for (const pu of powerups){
       const dx=pu.x-b.x, dy=pu.y-b.y;
@@ -1348,7 +1359,42 @@ function startSeating(fmt){
   document.body.classList.add('playing');
 }
 function pickSeat(px,py){
-  for (const sX of seats){ if (Math.hypot(sX.x-px, sX.y-py) < 60){ chosenSeat=sX; cannonHome={x:sX.x,y:sX.y}; cannon.x=sX.x; cannon.y=sX.y; matchSeed=(Math.random()*1e9)|0; setSeed(matchSeed); for(let i=0;i<5;i++) spawnFish(false); phase='playing'; running=true; brokeT=0; initAudio(); return; } }
+  for (const sX of seats){ if (Math.hypot(sX.x-px, sX.y-py) < 60){
+    chosenSeat=sX; cannonHome={x:sX.x,y:sX.y}; cannon.x=sX.x; cannon.y=sX.y;
+    bots=[]; const _bn=['Sharky','DeepBlue','Kraken','FinJet','AbyssAce','TideWolf','Coralis','NeptuneX'], _bc=['#ff8a5b','#b07bff','#5affd2','#ff6f9c']; let _ni=Math.random()*_bn.length|0,_ci=0;
+    for (const s2 of seats){ if (s2!==chosenSeat){ bots.push({ seat:s2, name:_bn[_ni++ % _bn.length], score:0, fireT:rand(0.3,1.0), col:_bc[_ci++ % _bc.length] }); } }
+    matchSeed=(Math.random()*1e9)|0; setSeed(matchSeed); for(let i=0;i<5;i++) spawnFish(false); phase='playing'; running=true; brokeT=0; initAudio(); return;
+  } }
+}
+function drawBots(){
+  ctx.save(); ctx.textAlign='center';
+  for (const bot of bots){ const s=bot.seat, dirY=s.y<H*0.4?1:-1;
+    ctx.save(); ctx.translate(s.x,s.y);
+    ctx.fillStyle='rgba(10,28,38,0.92)'; ctx.strokeStyle=bot.col; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.arc(0,0,14,0,6.28); ctx.fill(); ctx.stroke();
+    ctx.lineWidth=5; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,dirY*20); ctx.stroke();
+    ctx.restore();
+    const by=s.y<H*0.4?s.y+36:s.y-32;
+    ctx.font='800 12px Segoe UI,sans-serif'; ctx.shadowColor='rgba(0,0,0,.8)'; ctx.shadowBlur=4;
+    ctx.fillStyle=bot.col; ctx.fillText(bot.name, s.x, by);
+    ctx.fillStyle='#ffce63'; ctx.fillText(formatNum(bot.score), s.x, by+15); ctx.shadowBlur=0;
+  }
+  ctx.restore();
+}
+function drawScoreboard(){
+  const ps=[{n:NICK,sc:score,me:true}].concat(bots.map(b=>({n:b.name,sc:b.score})));
+  ps.sort((a,b)=>b.sc-a.sc);
+  const w=190, x=(W-w)/2, y=58, rh=19, h=ps.length*rh+12;
+  ctx.save();
+  ctx.fillStyle='rgba(4,16,24,0.72)'; ctx.strokeStyle='rgba(80,200,200,0.3)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.rect(x,y,w,h); ctx.fill(); ctx.stroke();
+  ps.forEach((pp,i)=>{ const yy=y+14+i*rh;
+    ctx.font=(pp.me?'800':'600')+' 12px Segoe UI,sans-serif';
+    ctx.fillStyle=i===0?'#ffce63':(pp.me?'#aef9ec':'#cfe9ee'); ctx.textAlign='left';
+    ctx.fillText((i+1)+'. '+pp.n+(pp.me?' (you)':''), x+8, yy);
+    ctx.textAlign='right'; ctx.fillText(formatNum(pp.sc), x+w-8, yy);
+  });
+  ctx.restore();
 }
 function drawSeats(){
   const t=performance.now()*0.003;
@@ -1596,7 +1642,7 @@ function render(time){
   }
   ctx.restore();
 
-  if (phase==='playing' && mode==='multi') drawOtherSeats();
+  if (phase==='playing' && mode==='multi'){ drawBots(); drawScoreboard(); }
   if (phase !== 'seating') drawCannon();
   if (phase==='playing' && mode==='multi') drawNick();
 
@@ -1694,7 +1740,7 @@ function startGame(){
   score=0; credits=((mode==='free'||mode==='multi')?100000:START_CREDITS); creditsShown=credits; timeLeft=ROUND_TIME; brokeT=0;
   combo=1; comboKills=0; comboTimer=0; spawnTimer=0; elapsed=0;
   shake=0; flash=0; wpnLevel=1; firing=false;
-  powerups=[]; puTimer=18; freezeT=0; doubleT=0; multiT=0; cannonHome=null;
+  powerups=[]; puTimer=18; freezeT=0; doubleT=0; multiT=0; cannonHome=null; bots=[];
   stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
   setWpn(mode==='multi'?3:1); updateHUD();
   document.getElementById('hud-combo').textContent='x1';
@@ -1715,7 +1761,7 @@ function startGame(){
 function exitToMenu(){
   running = false; firing = false; phase = 'menu';
   document.body.classList.remove('playing');
-  fish = []; bullets = []; particles = []; pops = []; rings = [];
+  fish = []; bullets = []; particles = []; pops = []; rings = []; bots = [];
   seedAmbient();
   renderMenu();
   document.getElementById('overlay-end').classList.add('hidden');

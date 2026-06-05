@@ -422,3 +422,6 @@ body.playing #weapon-bar{display:flex;}
 .room-join:hover{transform:scale(1.05);box-shadow:0 4px 14px rgba(40,224,200,.45);}
 .practice-link{display:inline-block;margin-top:14px;color:rgba(180,210,220,.7);font:600 13px 'Segoe UI',sans-serif;cursor:pointer;text-decoration:none;}
 .practice-link:hover{color:#aef9ec;}
+
+.wallet-bar{display:inline-block;margin-top:8px;padding:6px 16px;border-radius:20px;background:rgba(8,26,36,.8);border:1px solid rgba(255,206,99,.4);font:700 14px 'Segoe UI',sans-serif;color:#cfe9ee;}
+.wallet-bar strong{color:#ffce63;}
