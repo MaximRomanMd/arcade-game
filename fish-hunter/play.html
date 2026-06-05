@@ -16,6 +16,7 @@
   <header id="hud">
     <a id="back-btn" href="../game-portal/index.html" title="Back to Portal">‹ PORTAL</a>
     <button id="mute-btn" title="Sound on/off">🔊</button>
+    <div id="balance-hud" title="Your balance"><span class="coin-ico"></span><span id="bal-val">10,000</span></div>
     <div id="wallet-hud" title="Your credits"><span class="coin-ico"></span><span id="wallet-val">0</span></div>
 
     <div class="hud-block">
@@ -85,7 +86,6 @@
     <div id="lobby-landing">
       <div class="lobby2-cols">
         <div class="lobby2-left">
-          <div class="wallet-bar">BALANCE&nbsp; <strong>$<span id="lobby-wallet">10000</span></strong></div>
           <button id="btn-multi" class="menu-cta cta-play">MULTIPLAYER</button>
         </div>
         <div class="lobby2-right">
@@ -108,7 +108,6 @@
       <div class="rooms-head">
         <div class="rooms-title">CHOOSE A ROOM</div>
         <div class="rooms-sub">Same seeded board for everyone &middot; best score wins &middot; 90s</div>
-        <div class="wallet-bar">BALANCE&nbsp; <strong>$<span id="lobby-wallet2">10000</span></strong></div>
       </div>
       <div id="rooms-list" class="rooms-list"></div>
       <button id="btn-rooms-back" class="rooms-back">&larr; Back to lobby</button>

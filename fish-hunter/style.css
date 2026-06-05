@@ -438,3 +438,12 @@ body.playing #weapon-bar{display:flex;}
 
 /* landing wrapper must not affect layout — restore original lobby positioning */
 #lobby-landing{display:contents;}
+
+/* Balance chip in the top bar (next to the sound button) */
+#balance-hud{display:flex;align-items:center;gap:5px;margin-left:2px;padding:4px 11px;border-radius:11px;background:rgba(0,0,0,.32);border:1px solid rgba(255,206,99,.45);}
+#balance-hud .coin-ico{width:16px;height:16px;}
+#bal-val{font:800 14px/1 'Segoe UI',sans-serif;color:#ffce63;}
+#bal-val::before{content:'$';opacity:.85;}
+/* Show balance only in the lobby; show the in-game credits coin only while playing */
+body.playing #balance-hud{display:none;}
+body:not(.playing) #wallet-hud{display:none;}

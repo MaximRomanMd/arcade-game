@@ -783,6 +783,7 @@ function renderCredits(){
 function renderRooms(){
   const list=document.getElementById('rooms-list'); if(!list) return;
   const _wb=document.getElementById('lobby-wallet'); if(_wb) _wb.textContent=formatNum(wallet);
+  const _bv=document.getElementById('bal-val'); if(_bv) _bv.textContent=formatNum(wallet);
   const _wb2=document.getElementById('lobby-wallet2'); if(_wb2) _wb2.textContent=formatNum(wallet);
   const prices=[0.5,1,5,10,50];
   const fmts=[{k:'1v1',name:'1v1 DUEL',seats:2},{k:'4p',name:'4 PLAYERS',seats:4}];
@@ -820,6 +821,7 @@ function renderRooms(){
 }
 function renderMenu(){
   { const _ll=document.getElementById('lobby-landing'), _rv=document.getElementById('rooms-view'); if(_ll)_ll.classList.remove('hidden'); if(_rv)_rv.classList.add('hidden'); }
+  { const _bv=document.getElementById('bal-val'); if(_bv) _bv.textContent=formatNum(wallet); }
   if (logoImg.complete && logoImg.naturalWidth > 0){
     const li = document.getElementById('menu-logo-img');
     const lt = document.getElementById('menu-logo-text');
@@ -1858,7 +1860,7 @@ document.querySelectorAll('#ov-mode .mode-btn').forEach(btn=>{
     btn.classList.add('active'); mode = btn.dataset.mode;
   };
 });
-document.getElementById('btn-start').onclick = ()=>{ mode='tournament'; startGame(); };
+{ const b=document.getElementById('btn-start'); if(b) b.onclick=()=>{ mode='tournament'; startGame(); }; }
 const _sm = document.getElementById('soon-msg');
 function showSoon(w){ if(_sm){ _sm.textContent = w + ' - coming soon'; _sm.classList.add('show'); clearTimeout(showSoon._t); showSoon._t=setTimeout(()=>_sm.classList.remove('show'),1900); } }
 { const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>{ const ll=document.getElementById('lobby-landing'), rv=document.getElementById('rooms-view'); if(ll)ll.classList.add('hidden'); if(rv)rv.classList.remove('hidden'); renderRooms(); }; }
