@@ -1945,7 +1945,17 @@ function takeSeat(i,el){
 { const b=document.getElementById('btn-go-multi'); if(b) b.onclick=()=>{ const ll=document.getElementById('lobby-landing'), rv=document.getElementById('rooms-view'); if(ll)ll.classList.add('hidden'); if(rv)rv.classList.remove('hidden'); renderRooms(); }; }
 { const b=document.getElementById('btn-rooms-back'); if(b) b.onclick=()=>{ const ll=document.getElementById('lobby-landing'), rv=document.getElementById('rooms-view'); if(rv)rv.classList.add('hidden'); if(ll)ll.classList.remove('hidden'); }; }
 { const b=document.getElementById('credits-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-credits'); if(o) o.classList.add('hidden'); }; }
-document.getElementById('btn-again').onclick = () => { startGame(); };
+document.getElementById('btn-again').onclick = () => {
+  if (mode === 'multi'){
+    // multiplayer: send the player back to the rooms tab to pick a room again
+    exitToMenu();
+    const ll=document.getElementById('lobby-landing'), rv=document.getElementById('rooms-view');
+    if (ll) ll.classList.add('hidden'); if (rv) rv.classList.remove('hidden');
+    renderRooms();
+  } else {
+    startGame();
+  }
+};
 document.getElementById('exit-btn').onclick = exitToMenu;
 document.getElementById('mute-btn').onclick = toggleMute;
 function makeCoinIcon(){
