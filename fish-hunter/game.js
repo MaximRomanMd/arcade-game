@@ -122,6 +122,7 @@ function pickType(elapsedFrac){
 let mode = 'tournament';
 let multiFormat = '4p';
 let multiSeat = 0;
+let cannonHome = null, seats = [], chosenSeat = null;
 let running = false;
 let fish = [], bullets = [], particles = [], pops = [], rings = [], bubbles = [];
 let aim = { x: W/2, y: H*0.4 };
@@ -357,7 +358,9 @@ function pointerPos(e){
 canvas.addEventListener('pointermove', e => { aim = pointerPos(e); });
 canvas.addEventListener('pointerdown', e => {
   initAudio();
-  aim = pointerPos(e); firing = true; fireTimer = 0; tryFire();
+  const _pp = pointerPos(e);
+  if (phase === 'seating'){ pickSeat(_pp.x, _pp.y); return; }
+  aim = _pp; firing = true; fireTimer = 0; tryFire();
 });
 window.addEventListener('pointerup',   () => firing = false);
 window.addEventListener('pointercancel',() => firing = false);
@@ -670,7 +673,7 @@ function spawnAmbient(){
 function seedAmbient(){ fish = []; for(let i=0;i<9;i++){ spawnAmbient(); fish[i].x = rand(0,W); } }
 
 function updateAmbient(dt){
-  cannon.x = W/2; cannon.y = H - 40;
+  if (cannonHome){ cannon.x = cannonHome.x; cannon.y = cannonHome.y; } else { cannon.x = W/2; cannon.y = H - 40; }
   cannonSway += dt;
   for (const f of fish){
     f.t += dt; f.wig += dt*6;
@@ -805,7 +808,7 @@ function revealMenu(){
 // ════════════════════════════════════════════════════════════════
 function update(dt){
   elapsed += dt;
-  cannon.x = W/2; cannon.y = H - 40;
+  if (cannonHome){ cannon.x = cannonHome.x; cannon.y = cannonHome.y; } else { cannon.x = W/2; cannon.y = H - 40; }
 
   if (mode==='tournament' || mode==='multi'){
     timeLeft -= dt;
@@ -1310,6 +1313,59 @@ function drawFish(f){
   ctx.restore();
 }
 
+function startSeating(fmt){
+  multiFormat=fmt;
+  fish=[]; bullets=[]; particles=[]; pops=[]; rings=[]; powerups=[];
+  score=0; credits=100000; creditsShown=credits; timeLeft=ROUND_TIME; brokeT=0;
+  combo=1; comboKills=0; comboTimer=0; spawnTimer=0; elapsed=0; shake=0; flash=0; firing=false;
+  cannonHome=null; chosenSeat=null;
+  stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'\u2014', biggestVal:0, coins:0 };
+  setWpn(3); updateHUD();
+  if (fmt==='1v1') seats=[{x:W*0.16,y:H*0.82},{x:W*0.84,y:H*0.82}];
+  else seats=[{x:W*0.16,y:H*0.20},{x:W*0.84,y:H*0.20},{x:W*0.16,y:H*0.82},{x:W*0.84,y:H*0.82}];
+  descent=1; mode='multi'; phase='seating'; running=false;
+  document.getElementById('overlay-start').classList.add('hidden');
+  document.getElementById('overlay-end').classList.add('hidden');
+  document.body.classList.add('playing');
+}
+function pickSeat(px,py){
+  for (const sX of seats){ if (Math.hypot(sX.x-px, sX.y-py) < 60){ chosenSeat=sX; cannonHome={x:sX.x,y:sX.y}; cannon.x=sX.x; cannon.y=sX.y; matchSeed=(Math.random()*1e9)|0; setSeed(matchSeed); for(let i=0;i<5;i++) spawnFish(false); phase='playing'; running=true; brokeT=0; initAudio(); return; } }
+}
+function drawSeats(){
+  const t=performance.now()*0.003;
+  ctx.save(); ctx.fillStyle='rgba(0,0,0,0.42)'; ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center'; ctx.fillStyle='#dff2ff'; ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=8;
+  ctx.font='800 28px Segoe UI,sans-serif'; ctx.fillText('PICK YOUR SEAT', W/2, H*0.49);
+  ctx.font='600 15px Segoe UI,sans-serif'; ctx.fillStyle='rgba(200,230,240,0.75)';
+  ctx.fillText('Tap a +  to take your spot at the table', W/2, H*0.49+24);
+  ctx.shadowBlur=0;
+  for (const sX of seats){
+    const pulse=0.65+0.35*Math.sin(t*2 + sX.x*0.01);
+    ctx.save(); ctx.translate(sX.x, sX.y); ctx.globalAlpha=pulse;
+    ctx.strokeStyle='#28e0c8'; ctx.lineWidth=6; ctx.lineCap='round'; ctx.shadowColor='#28e0c8'; ctx.shadowBlur=18;
+    const r=28; ctx.beginPath(); ctx.moveTo(-r,0); ctx.lineTo(r,0); ctx.moveTo(0,-r); ctx.lineTo(0,r); ctx.stroke();
+    ctx.shadowBlur=0; ctx.globalAlpha=pulse*0.45; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(0,0,r+10,0,6.28); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+function drawOtherSeats(){
+  ctx.save(); ctx.textAlign='center';
+  for (const sX of seats){ if (sX===chosenSeat) continue;
+    ctx.globalAlpha=0.4; ctx.strokeStyle='rgba(150,200,210,0.6)'; ctx.lineWidth=3; ctx.lineCap='round';
+    const r=15; ctx.beginPath(); ctx.moveTo(sX.x-r,sX.y); ctx.lineTo(sX.x+r,sX.y); ctx.moveTo(sX.x,sX.y-r); ctx.lineTo(sX.x,sX.y+r); ctx.stroke();
+    ctx.globalAlpha=0.65; ctx.font='700 11px Segoe UI,sans-serif'; ctx.fillStyle='rgba(180,210,220,0.85)';
+    ctx.fillText('WAITING\u2026', sX.x, sX.y<H*0.4?sX.y+30:sX.y-24);
+  }
+  ctx.restore();
+}
+function drawNick(){
+  ctx.save(); ctx.textAlign='center'; ctx.font='800 13px Segoe UI,sans-serif';
+  ctx.fillStyle='#ffce63'; ctx.shadowColor='rgba(0,0,0,0.8)'; ctx.shadowBlur=4;
+  ctx.fillText(NICK, cannon.x, cannon.y < H*0.4 ? cannon.y+50 : cannon.y-50);
+  ctx.restore();
+}
 function drawCannon(){
   let a;
   if (phase === 'playing'){
@@ -1408,6 +1464,7 @@ function render(time){
 
   drawBackground(time);
   drawBgLife();
+  if (phase==='seating') drawSeats();
 
   // cinematic descent: rising bubbles + water speed-lines + pressure vignette
   if (phase === 'dive'){
@@ -1505,7 +1562,9 @@ function render(time){
   }
   ctx.restore();
 
-  drawCannon();
+  if (phase==='playing' && mode==='multi') drawOtherSeats();
+  if (phase !== 'seating') drawCannon();
+  if (phase==='playing' && mode==='multi') drawNick();
 
   // score popups
   for (const p of pops){
@@ -1698,7 +1757,7 @@ document.getElementById('btn-start').onclick = ()=>{ mode='tournament'; startGam
 const _sm = document.getElementById('soon-msg');
 function showSoon(w){ if(_sm){ _sm.textContent = w + ' - coming soon'; _sm.classList.add('show'); clearTimeout(showSoon._t); showSoon._t=setTimeout(()=>_sm.classList.remove('show'),1900); } }
 { const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-multi'); if(o) o.classList.remove('hidden'); }; }
-document.querySelectorAll('#multi-mode .mode-btn').forEach(b=>{ b.onclick=()=>{ multiFormat=b.dataset.fmt; openSeats(multiFormat); }; });
+document.querySelectorAll('#multi-mode .mode-btn').forEach(b=>{ b.onclick=()=>{ multiFormat=b.dataset.fmt; const _om=document.getElementById('overlay-multi'); if(_om) _om.classList.add('hidden'); startSeating(multiFormat); }; });
 function openSeats(fmt){
   const table=document.getElementById('seat-table'); if(!table) return; table.innerHTML='';
   const sub=document.getElementById('seat-sub'); if(sub) sub.textContent = fmt==='1v1' ? '1v1 Duel - pick your side' : '4-Player table - pick your seat';
