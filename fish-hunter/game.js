@@ -297,7 +297,7 @@ function startAmbient(){
   const w=actx.createOscillator(), wg=actx.createGain(); w.frequency.value=0.08; wg.gain.value=0.012; w.connect(wg); wg.connect(ng.gain); w.start();
   noise.start();
 
-  ambGain.gain.linearRampToValueAtTime(0.38, actx.currentTime + 2.5);
+  ambGain.gain.linearRampToValueAtTime(0.22, actx.currentTime + 2.5);
 
   // ── cheerful gentle arpeggio: C major pentatonic, soft bells ──
   const scale=[523.25,587.33,659.25,783.99,880.0,1046.5]; let melI=2;
@@ -305,8 +305,8 @@ function startAmbient(){
   ambBubbleTimer = setInterval(()=>{
     if (muted || !actx) return;
     melI = Math.max(0, Math.min(scale.length-1, melI + (Math.random()<0.5?1:-1)*(Math.random()<0.72?1:2)));
-    bell(scale[melI], 0.95, 0.034);
-    if (Math.random()<0.35) bell(scale[melI]*1.5, 0.7, 0.016);   // soft harmony shimmer
+    bell(scale[melI], 0.95, 0.02);
+    if (Math.random()<0.35) bell(scale[melI]*1.5, 0.7, 0.01);   // soft harmony shimmer
   }, 900);
 }
 function _env(g, t0, vol, dur){
@@ -908,9 +908,14 @@ function update(dt){
         if (nf){ const want=Math.atan2(nf.y-bot.seat.y, nf.x-bot.seat.x); let da=want-bot.aimA; while(da>Math.PI)da-=6.2832; while(da<-Math.PI)da+=6.2832; bot.aimA+=da*Math.min(1,dt*7); }
       }
       bot.fireT -= dt;
-      if (fish.length && bot.fireT<=0){ bot.fireT = rand(0.14,0.20); const tgt = fish[(Math.random()*fish.length)|0];   // same weapon as the player: 3 dmg, 840 speed
-        if (tgt){ const ang=Math.atan2(tgt.y-bot.seat.y, tgt.x-bot.seat.x)+(Math.random()-0.5)*0.05;
-          bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(ang)*840, vy:Math.sin(ang)*840, dmg:3, r:4, life:1.4, trail:[], color:bot.col, owner:bot }); } }
+      if (fish.length && bot.fireT<=0){ bot.fireT = rand(0.18,0.26);   // human-like reaction (a touch slower than your hold-fire)
+        const tgt = fish[(Math.random()*fish.length)|0];
+        if (tgt){
+          const base = Math.atan2(tgt.y-bot.seat.y, tgt.x-bot.seat.x) + (Math.random()-0.5)*0.09;  // human aim wobble
+          const pellets=3, speed=840, spread=0.07;
+          for (let i=0;i<pellets;i++){ const off=(i-(pellets-1)/2)*spread;
+            bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(base+off)*speed, vy:Math.sin(base+off)*speed, dmg:1, r:7, life:1.4, trail:[], color:currentBulletColor(), owner:bot }); }
+        } }
     }
   }
   // auto-fire while holding
