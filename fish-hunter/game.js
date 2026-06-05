@@ -266,39 +266,48 @@ function initAudio(){
     startAmbient();
   } catch(e){ actx = null; }
 }
+function bell(freq, dur, vol){
+  if (!actx) return;
+  const o=actx.createOscillator(), o2=actx.createOscillator(), g=actx.createGain(), g2=actx.createGain();
+  o.type='sine'; o2.type='triangle'; o.frequency.value=freq; o2.frequency.value=freq*2.01;
+  g2.gain.value=0.22; o2.connect(g2); g2.connect(g); o.connect(g); g.connect(masterGain);
+  const t0=actx.currentTime;
+  g.gain.setValueAtTime(0.0001,t0); g.gain.linearRampToValueAtTime(vol,t0+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  o.start(t0); o2.start(t0); o.stop(t0+dur+0.05); o2.stop(t0+dur+0.05);
+}
 function startAmbient(){
   if (!actx) return;
   ambGain = actx.createGain(); ambGain.gain.value = 0; ambGain.connect(masterGain);
 
-  // ── gentle low pad (warm, calm) ──
-  const pad = actx.createGain(); pad.gain.value = 0.45; pad.connect(ambGain);
-  const o1 = actx.createOscillator(), o2 = actx.createOscillator(), o3 = actx.createOscillator();
-  o1.type='sine'; o2.type='sine'; o3.type='sine';
-  o1.frequency.value=65; o2.frequency.value=98; o3.frequency.value=147;   // soft minor-ish chord
-  const padFlt = actx.createBiquadFilter(); padFlt.type='lowpass'; padFlt.frequency.value=340;
-  o1.connect(padFlt); o2.connect(padFlt); o3.connect(padFlt); padFlt.connect(pad);
-  const lfo = actx.createOscillator(), lfoG = actx.createGain();
-  lfo.frequency.value=0.05; lfoG.gain.value=5; lfo.connect(lfoG); lfoG.connect(o2.frequency);
+  // ── bright warm MAJOR pad (happy) ──
+  const pad = actx.createGain(); pad.gain.value = 0.17; pad.connect(ambGain);
+  const padFlt = actx.createBiquadFilter(); padFlt.type='lowpass'; padFlt.frequency.value=1500; padFlt.connect(pad);
+  [220.0, 277.18, 329.63].forEach((f,i)=>{                 // A major triad, gentle
+    const o=actx.createOscillator(); o.type='sine'; o.frequency.value=f;
+    const g=actx.createGain(); g.gain.value=0.42; o.connect(g); g.connect(padFlt); o.start();
+    const lf=actx.createOscillator(), lg=actx.createGain(); lf.frequency.value=0.05+i*0.02; lg.gain.value=2.5; lf.connect(lg); lg.connect(o.frequency); lf.start();
+  });
 
-  // ── ocean water bed: brown noise with slow wave swells ──
-  const len = Math.floor(actx.sampleRate*4);
-  const nbuf = actx.createBuffer(1, len, actx.sampleRate);
-  const nd = nbuf.getChannelData(0); let last=0;
-  for (let i=0;i<len;i++){ const wn=Math.random()*2-1; last=(last+0.02*wn)/1.02; nd[i]=Math.max(-1,Math.min(1,last*3.2)); }
-  const noise = actx.createBufferSource(); noise.buffer=nbuf; noise.loop=true;
-  const nFlt = actx.createBiquadFilter(); nFlt.type='lowpass'; nFlt.frequency.value=520; nFlt.Q.value=0.7;
-  const nGain = actx.createGain(); nGain.gain.value=0.11;
-  noise.connect(nFlt); nFlt.connect(nGain); nGain.connect(ambGain);
-  // swell 1: slow volume tide; swell 2: filter sweep (water moving)
-  const w1=actx.createOscillator(), w1G=actx.createGain(); w1.frequency.value=0.09; w1G.gain.value=0.06; w1.connect(w1G); w1G.connect(nGain.gain);
-  const w2=actx.createOscillator(), w2G=actx.createGain(); w2.frequency.value=0.045; w2G.gain.value=260; w2.connect(w2G); w2G.connect(nFlt.frequency);
+  // ── light water shimmer (quiet, sparkly) ──
+  const len=Math.floor(actx.sampleRate*3); const nb=actx.createBuffer(1,len,actx.sampleRate); const nd=nb.getChannelData(0);
+  for(let i=0;i<len;i++) nd[i]=(Math.random()*2-1)*0.5;
+  const noise=actx.createBufferSource(); noise.buffer=nb; noise.loop=true;
+  const nf=actx.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=2200; nf.Q.value=0.5;
+  const ng=actx.createGain(); ng.gain.value=0.02; noise.connect(nf); nf.connect(ng); ng.connect(ambGain);
+  const w=actx.createOscillator(), wg=actx.createGain(); w.frequency.value=0.08; wg.gain.value=0.012; w.connect(wg); wg.connect(ng.gain); w.start();
+  noise.start();
 
-  o1.start(); o2.start(); o3.start(); lfo.start(); noise.start(); w1.start(); w2.start();
-  ambGain.gain.linearRampToValueAtTime(0.17, actx.currentTime + 3.5);
+  ambGain.gain.linearRampToValueAtTime(0.6, actx.currentTime + 2.5);
 
-  // ── occasional soft bubbles ──
+  // ── cheerful gentle arpeggio: C major pentatonic, soft bells ──
+  const scale=[523.25,587.33,659.25,783.99,880.0,1046.5]; let melI=2;
   if (ambBubbleTimer) clearInterval(ambBubbleTimer);
-  ambBubbleTimer = setInterval(()=>{ if (muted || !actx) return; const f=620+Math.random()*1500; blip({freq:f,type:'sine',dur:0.16,vol:0.035,slideTo:f*1.7}); }, 3800);
+  ambBubbleTimer = setInterval(()=>{
+    if (muted || !actx) return;
+    melI = Math.max(0, Math.min(scale.length-1, melI + (Math.random()<0.5?1:-1)*(Math.random()<0.72?1:2)));
+    bell(scale[melI], 0.95, 0.05);
+    if (Math.random()<0.35) bell(scale[melI]*1.5, 0.7, 0.022);   // soft harmony shimmer
+  }, 900);
 }
 function _env(g, t0, vol, dur){
   g.gain.setValueAtTime(0.0001, t0);
