@@ -255,7 +255,7 @@ function renderShop(){
 // ════════════════════════════════════════════════════════════════
 //  SOUND — procedural Web Audio (no files)
 // ════════════════════════════════════════════════════════════════
-let actx = null, masterGain = null, ambGain = null, muted = false;
+let actx = null, masterGain = null, ambGain = null, muted = false, ambBubbleTimer = null;
 function initAudio(){
   if (actx){ if (actx.state === 'suspended') actx.resume(); return; }
   try {
@@ -269,14 +269,36 @@ function initAudio(){
 function startAmbient(){
   if (!actx) return;
   ambGain = actx.createGain(); ambGain.gain.value = 0; ambGain.connect(masterGain);
-  const o1 = actx.createOscillator(), o2 = actx.createOscillator();
-  o1.type = 'sine'; o2.type = 'sine'; o1.frequency.value = 56; o2.frequency.value = 84;
+
+  // ── gentle low pad (warm, calm) ──
+  const pad = actx.createGain(); pad.gain.value = 0.45; pad.connect(ambGain);
+  const o1 = actx.createOscillator(), o2 = actx.createOscillator(), o3 = actx.createOscillator();
+  o1.type='sine'; o2.type='sine'; o3.type='sine';
+  o1.frequency.value=65; o2.frequency.value=98; o3.frequency.value=147;   // soft minor-ish chord
+  const padFlt = actx.createBiquadFilter(); padFlt.type='lowpass'; padFlt.frequency.value=340;
+  o1.connect(padFlt); o2.connect(padFlt); o3.connect(padFlt); padFlt.connect(pad);
   const lfo = actx.createOscillator(), lfoG = actx.createGain();
-  lfo.frequency.value = 0.08; lfoG.gain.value = 9; lfo.connect(lfoG); lfoG.connect(o2.frequency);
-  const flt = actx.createBiquadFilter(); flt.type = 'lowpass'; flt.frequency.value = 300;
-  o1.connect(flt); o2.connect(flt); flt.connect(ambGain);
-  o1.start(); o2.start(); lfo.start();
-  ambGain.gain.linearRampToValueAtTime(0.10, actx.currentTime + 2.5);
+  lfo.frequency.value=0.05; lfoG.gain.value=5; lfo.connect(lfoG); lfoG.connect(o2.frequency);
+
+  // ── ocean water bed: brown noise with slow wave swells ──
+  const len = Math.floor(actx.sampleRate*4);
+  const nbuf = actx.createBuffer(1, len, actx.sampleRate);
+  const nd = nbuf.getChannelData(0); let last=0;
+  for (let i=0;i<len;i++){ const wn=Math.random()*2-1; last=(last+0.02*wn)/1.02; nd[i]=Math.max(-1,Math.min(1,last*3.2)); }
+  const noise = actx.createBufferSource(); noise.buffer=nbuf; noise.loop=true;
+  const nFlt = actx.createBiquadFilter(); nFlt.type='lowpass'; nFlt.frequency.value=520; nFlt.Q.value=0.7;
+  const nGain = actx.createGain(); nGain.gain.value=0.11;
+  noise.connect(nFlt); nFlt.connect(nGain); nGain.connect(ambGain);
+  // swell 1: slow volume tide; swell 2: filter sweep (water moving)
+  const w1=actx.createOscillator(), w1G=actx.createGain(); w1.frequency.value=0.09; w1G.gain.value=0.06; w1.connect(w1G); w1G.connect(nGain.gain);
+  const w2=actx.createOscillator(), w2G=actx.createGain(); w2.frequency.value=0.045; w2G.gain.value=260; w2.connect(w2G); w2G.connect(nFlt.frequency);
+
+  o1.start(); o2.start(); o3.start(); lfo.start(); noise.start(); w1.start(); w2.start();
+  ambGain.gain.linearRampToValueAtTime(0.17, actx.currentTime + 3.5);
+
+  // ── occasional soft bubbles ──
+  if (ambBubbleTimer) clearInterval(ambBubbleTimer);
+  ambBubbleTimer = setInterval(()=>{ if (muted || !actx) return; const f=620+Math.random()*1500; blip({freq:f,type:'sine',dur:0.16,vol:0.035,slideTo:f*1.7}); }, 3800);
 }
 function _env(g, t0, vol, dur){
   g.gain.setValueAtTime(0.0001, t0);
