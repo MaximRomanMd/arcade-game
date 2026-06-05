@@ -1856,7 +1856,7 @@ document.querySelectorAll('#ov-mode .mode-btn').forEach(btn=>{
 document.getElementById('btn-start').onclick = ()=>{ mode='tournament'; startGame(); };
 const _sm = document.getElementById('soon-msg');
 function showSoon(w){ if(_sm){ _sm.textContent = w + ' - coming soon'; _sm.classList.add('show'); clearTimeout(showSoon._t); showSoon._t=setTimeout(()=>_sm.classList.remove('show'),1900); } }
-{ const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-multi'); if(o) o.classList.remove('hidden'); }; }
+{ const b=document.getElementById('btn-multi'); if(b) b.onclick=()=>{ const ll=document.getElementById('lobby-landing'), rv=document.getElementById('rooms-view'); if(ll)ll.classList.add('hidden'); if(rv)rv.classList.remove('hidden'); renderRooms(); }; }
 document.querySelectorAll('#multi-mode .mode-btn').forEach(b=>{ b.onclick=()=>{ multiFormat=b.dataset.fmt; const _om=document.getElementById('overlay-multi'); if(_om) _om.classList.add('hidden'); startSeating(multiFormat); }; });
 function openSeats(fmt){
   const table=document.getElementById('seat-table'); if(!table) return; table.innerHTML='';
