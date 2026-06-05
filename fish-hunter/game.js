@@ -1333,30 +1333,45 @@ function pickSeat(px,py){
 }
 function drawSeats(){
   const t=performance.now()*0.003;
-  ctx.save(); ctx.fillStyle='rgba(0,0,0,0.42)'; ctx.fillRect(0,0,W,H);
-  ctx.textAlign='center'; ctx.fillStyle='#dff2ff'; ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=8;
-  ctx.font='800 28px Segoe UI,sans-serif'; ctx.fillText('PICK YOUR SEAT', W/2, H*0.49);
-  ctx.font='600 15px Segoe UI,sans-serif'; ctx.fillStyle='rgba(200,230,240,0.75)';
-  ctx.fillText('Tap a +  to take your spot at the table', W/2, H*0.49+24);
+  ctx.save(); ctx.fillStyle='rgba(0,0,0,0.52)'; ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center'; ctx.fillStyle='#eaf7ff'; ctx.shadowColor='rgba(0,0,0,.7)'; ctx.shadowBlur=10;
+  ctx.font='900 32px Segoe UI,sans-serif'; ctx.fillText('PICK YOUR SEAT', W/2, H*0.46);
+  ctx.font='600 16px Segoe UI,sans-serif'; ctx.fillStyle='rgba(215,238,248,0.9)';
+  ctx.fillText('Tap a glowing seat to take your spot', W/2, H*0.46+26);
   ctx.shadowBlur=0;
   for (const sX of seats){
-    const pulse=0.65+0.35*Math.sin(t*2 + sX.x*0.01);
-    ctx.save(); ctx.translate(sX.x, sX.y); ctx.globalAlpha=pulse;
-    ctx.strokeStyle='#28e0c8'; ctx.lineWidth=6; ctx.lineCap='round'; ctx.shadowColor='#28e0c8'; ctx.shadowBlur=18;
-    const r=28; ctx.beginPath(); ctx.moveTo(-r,0); ctx.lineTo(r,0); ctx.moveTo(0,-r); ctx.lineTo(0,r); ctx.stroke();
-    ctx.shadowBlur=0; ctx.globalAlpha=pulse*0.45; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(0,0,r+10,0,6.28); ctx.stroke();
+    const pulse=0.72+0.28*Math.sin(t*2.4 + sX.x*0.01);
+    ctx.save(); ctx.translate(sX.x, sX.y);
+    const R=50;
+    const g=ctx.createRadialGradient(0,0,4,0,0,R);
+    g.addColorStop(0,'rgba(40,224,200,'+(0.40*pulse).toFixed(3)+')'); g.addColorStop(1,'rgba(40,224,200,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,R,0,6.28); ctx.fill();
+    ctx.globalAlpha=pulse; ctx.strokeStyle='#3affe0'; ctx.lineWidth=3.5; ctx.shadowColor='#28e0c8'; ctx.shadowBlur=22;
+    ctx.beginPath(); ctx.arc(0,0,R*0.62+Math.sin(t*3)*2,0,6.28); ctx.stroke();
+    ctx.lineWidth=9; ctx.lineCap='round';
+    const r=21; ctx.beginPath(); ctx.moveTo(-r,0); ctx.lineTo(r,0); ctx.moveTo(0,-r); ctx.lineTo(0,r); ctx.stroke();
+    ctx.shadowBlur=0; ctx.globalAlpha=1; ctx.fillStyle='#aef9ec'; ctx.font='900 13px Segoe UI,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('TAP TO SIT', 0, R+20);
     ctx.restore();
   }
   ctx.restore();
 }
 function drawOtherSeats(){
+  const t=performance.now()*0.003;
   ctx.save(); ctx.textAlign='center';
   for (const sX of seats){ if (sX===chosenSeat) continue;
-    ctx.globalAlpha=0.4; ctx.strokeStyle='rgba(150,200,210,0.6)'; ctx.lineWidth=3; ctx.lineCap='round';
-    const r=15; ctx.beginPath(); ctx.moveTo(sX.x-r,sX.y); ctx.lineTo(sX.x+r,sX.y); ctx.moveTo(sX.x,sX.y-r); ctx.lineTo(sX.x,sX.y+r); ctx.stroke();
-    ctx.globalAlpha=0.65; ctx.font='700 11px Segoe UI,sans-serif'; ctx.fillStyle='rgba(180,210,220,0.85)';
-    ctx.fillText('WAITING\u2026', sX.x, sX.y<H*0.4?sX.y+30:sX.y-24);
+    const pulse=0.6+0.4*Math.sin(t*2 + sX.x*0.01);
+    ctx.save(); ctx.translate(sX.x, sX.y);
+    ctx.globalAlpha=0.55*pulse; ctx.strokeStyle='#7fd4ff'; ctx.lineWidth=2.5; ctx.setLineDash([6,6]); ctx.shadowColor='#7fd4ff'; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(0,0,30,0,6.28); ctx.stroke(); ctx.setLineDash([]); ctx.shadowBlur=0;
+    ctx.globalAlpha=1; ctx.font='800 13px Segoe UI,sans-serif';
+    const lbl='WAITING\u2026', w=ctx.measureText(lbl).width+20;
+    const rx=-w/2, ry=-13, rr=13;
+    ctx.fillStyle='rgba(6,22,32,0.88)'; ctx.beginPath();
+    ctx.moveTo(rx+rr,ry); ctx.arcTo(rx+w,ry,rx+w,ry+26,rr); ctx.arcTo(rx+w,ry+26,rx,ry+26,rr); ctx.arcTo(rx,ry+26,rx,ry,rr); ctx.arcTo(rx,ry,rx+w,ry,rr); ctx.fill();
+    ctx.strokeStyle='rgba(127,212,255,0.7)'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='#cfeaff'; ctx.fillText(lbl, 0, 5);
+    ctx.restore();
   }
   ctx.restore();
 }
