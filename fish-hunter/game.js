@@ -120,7 +120,7 @@ function pickType(elapsedFrac){
 
 // ── game state ───────────────────────────────────────────────────
 let mode = 'tournament';
-let multiFormat = '4p';
+let multiFormat = '6p';
 let multiSeat = 0;
 let cannonHome = null, seats = [], chosenSeat = null;
 let wallet = (parseFloat(localStorage.getItem('fishhunter_wallet')) || 10000), bots = [];
@@ -825,10 +825,10 @@ function renderRooms(){
   const _bv=document.getElementById('bal-val'); if(_bv) _bv.textContent=formatNum(wallet);
   const _wb2=document.getElementById('lobby-wallet2'); if(_wb2) _wb2.textContent=formatNum(wallet);
   const prices=[0.5,1,5,10,50];
-  const fmts=[{k:'1v1',name:'1v1 DUEL',seats:2},{k:'4p',name:'4 PLAYERS',seats:4}];
+  const fmts=[{k:'1v1',name:'1v1 DUEL',seats:2},{k:'6p',name:'6 PLAYERS',seats:6},{k:'8p',name:'8 PLAYERS',seats:8}];
   let html='';
   prices.forEach((pr,pi)=>{ fmts.forEach(f=>{
-    const net=pr*f.seats*0.90, top=f.k==='1v1'?net:net*0.5, filled=(pi+(f.k==='4p'?2:1))%f.seats;
+    const net=pr*f.seats*0.90, top=f.k==='1v1'?net:net*0.5, filled=(pi+(f.k==='1v1'?1:2))%f.seats;
     html+='<div class="room-card" data-fmt="'+f.k+'" data-entry="'+pr+'" data-prize="'+top.toFixed(2)+'">'
       +'<div class="room-logo"><img src="assets/logo.png?v=1" alt=""></div>'
       +'<div class="room-mid"><div class="room-name">'+f.name+'</div>'
@@ -852,7 +852,7 @@ function renderRooms(){
         const entry = parseFloat(card.dataset.entry||'0'), prize = parseFloat(card.dataset.prize||'0');
         if (wallet < entry){ alert('Balance too low for this room (needs $'+entry.toFixed(2)+').'); return; }
         wallet -= entry; roomEntry = entry; roomPrize = prize; saveWallet();   // pay the entry fee
-        multiFormat = card.dataset.fmt || '4p';
+        multiFormat = card.dataset.fmt || '6p';
         const os = document.getElementById('overlay-start'); if (os) os.classList.add('hidden');
         startSeating(multiFormat);
       } catch(err){ console.error('JOIN failed:', err); alert('Join error: '+err.message); }
@@ -1433,8 +1433,13 @@ function startSeating(fmt){
   cannonHome=null; chosenSeat=null;
   stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'\u2014', biggestVal:0, coins:0 };
   setWpn(3); updateHUD();
-  if (fmt==='1v1') seats=[{x:W*0.16,y:H*0.82},{x:W*0.84,y:H*0.82}];
-  else seats=[{x:W*0.16,y:H*0.20},{x:W*0.84,y:H*0.20},{x:W*0.16,y:H*0.82},{x:W*0.84,y:H*0.82}];
+  if (fmt==='1v1'){
+    seats=[{x:W*0.16,y:H*0.82},{x:W*0.84,y:H*0.82}];
+  } else {
+    const per = (fmt==='8p') ? 4 : 3;                 // 6p = 3 top + 3 bottom, 8p = 4 top + 4 bottom
+    const row=(n,y)=>{ const a=[]; for(let i=0;i<n;i++){ a.push({x: W*(0.14 + 0.72*(n===1?0.5:i/(n-1))), y}); } return a; };
+    seats=[...row(per, H*0.20), ...row(per, H*0.82)];
+  }
   descent=1; mode='multi'; phase='seating'; running=false;
   document.getElementById('overlay-start').classList.add('hidden');
   document.getElementById('overlay-end').classList.add('hidden');
