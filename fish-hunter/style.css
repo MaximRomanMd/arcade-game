@@ -447,3 +447,7 @@ body.playing #weapon-bar{display:flex;}
 /* Show balance only in the lobby; show the in-game credits coin only while playing */
 body.playing #balance-hud{display:none;}
 body:not(.playing) #wallet-hud{display:none;}
+
+/* room group headers (1v1 / 6 PLAYERS / 8 PLAYERS) */
+.rooms-section{grid-column:1/-1;margin:6px 2px 2px;padding-bottom:4px;font:800 13px 'Segoe UI',sans-serif;letter-spacing:1.5px;color:#9fe6dd;border-bottom:1px solid rgba(120,200,210,.18);text-transform:uppercase;}
+.rooms-section:first-child{margin-top:0;}

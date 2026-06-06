@@ -827,16 +827,19 @@ function renderRooms(){
   const prices=[0.5,1,5,10,50];
   const fmts=[{k:'1v1',name:'1v1 DUEL',seats:2},{k:'6p',name:'6 PLAYERS',seats:6},{k:'8p',name:'8 PLAYERS',seats:8}];
   let html='';
-  prices.forEach((pr,pi)=>{ fmts.forEach(f=>{
-    const net=pr*f.seats*0.90, top=f.k==='1v1'?net:net*0.5, filled=(pi+(f.k==='1v1'?1:2))%f.seats;
-    html+='<div class="room-card" data-fmt="'+f.k+'" data-entry="'+pr+'" data-prize="'+top.toFixed(2)+'">'
-      +'<div class="room-logo"><img src="assets/logo.png?v=1" alt=""></div>'
-      +'<div class="room-mid"><div class="room-name">'+f.name+'</div>'
-      +'<div class="room-meta">$'+pr.toFixed(2)+' entry &middot; 90s &middot; seeded</div>'
-      +'<div class="room-players">'+filled+'/'+f.seats+' seated</div></div>'
-      +'<div class="room-right"><div class="room-prize">WIN $'+top.toFixed(2)+'</div>'
-      +'<button class="room-join">JOIN</button></div></div>';
-  }); });
+  fmts.forEach(f=>{                                   // grouped & ordered: 1v1, then 6p, then 8p
+    html+='<div class="rooms-section">'+f.name+'</div>';
+    prices.forEach((pr,pi)=>{
+      const net=pr*f.seats*0.90, top=f.k==='1v1'?net:net*0.5, filled=(pi+(f.k==='1v1'?1:2))%f.seats;
+      html+='<div class="room-card" data-fmt="'+f.k+'" data-entry="'+pr+'" data-prize="'+top.toFixed(2)+'">'
+        +'<div class="room-logo"><img src="assets/logo.png?v=1" alt=""></div>'
+        +'<div class="room-mid"><div class="room-name">'+f.name+'</div>'
+        +'<div class="room-meta">$'+pr.toFixed(2)+' entry &middot; 90s &middot; seeded</div>'
+        +'<div class="room-players">'+filled+'/'+f.seats+' seated</div></div>'
+        +'<div class="room-right"><div class="room-prize">WIN $'+top.toFixed(2)+'</div>'
+        +'<button class="room-join">JOIN</button></div></div>';
+    });
+  });
   list.innerHTML=html;
   // Event delegation: one robust listener on the container. A click anywhere on a
   // room card (or its JOIN button) enters that room. Survives re-renders and avoids
