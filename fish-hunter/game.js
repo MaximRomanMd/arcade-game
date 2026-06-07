@@ -252,16 +252,16 @@ function grantDailyLogin(){
   const y=new Date(Date.now()-86400000); const ys=y.getUTCFullYear()+'-'+(y.getUTCMonth()+1)+'-'+y.getUTCDate();
   let streak=parseInt(localStorage.getItem('fishhunter_xp_streak')||'0',10);
   streak = (last===ys) ? streak+1 : 1;
-  const reward=Math.min(250, 50+(streak-1)*25);
+  const reward=Math.min(60, 15+(streak-1)*5);
   localStorage.setItem('fishhunter_xp_login',today); localStorage.setItem('fishhunter_xp_streak',String(streak));
   xpSet(xpGet()+reward);
   setTimeout(()=>xpToast('Daily login +'+reward+' XP \u00b7 Day '+streak),700);
 }
 
 const QUEST_DEFS=[
-  {id:'play',  desc:'Play 3 matches', goal:3,  xp:120},
-  {id:'catch', desc:'Catch 80 fish',  goal:80, xp:150},
-  {id:'win',   desc:'Win a room',     goal:1,  xp:200},
+  {id:'play',  desc:'Play 3 matches', goal:3,  xp:40},
+  {id:'catch', desc:'Catch 80 fish',  goal:80, xp:50},
+  {id:'win',   desc:'Win a room',     goal:1,  xp:70},
 ];
 function questState(){
   let q; try{ q=JSON.parse(localStorage.getItem('fishhunter_quests')||'null'); }catch(e){ q=null; }
@@ -1497,7 +1497,7 @@ function pickSeat(px,py){
   } }
 }
 function drawBots(){
-  const _cimg = currentCannonImg();
+  const _cimg = (cannonReady ? cannonImg : null);   // bots use the standard cannon; skins are personal
   for (const bot of bots){
     const s=bot.seat, a=(bot.aimA!==undefined ? bot.aimA : (s.y<H*0.4?Math.PI/2:-Math.PI/2));
     if (_cimg){
@@ -1923,7 +1923,7 @@ function endGame(){
   lsS(K.coins, ls(K.coins)+stats.coins);
   if (stats.bestCombo > ls(K.bigCombo)) lsS(K.bigCombo, stats.bestCombo);
   if (mode==='tournament') saveLeaderboard(score);
-  const _mxp = Math.round(score/200) + stats.kills*2;
+  const _mxp = Math.round(score/500) + Math.floor(stats.kills/2);
   xpAdd(_mxp); questProgress('play', 1);
 
   // fill end screen
