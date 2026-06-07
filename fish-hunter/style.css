@@ -474,3 +474,26 @@ body:not(.playing) #wallet-hud{display:none;}
 .room-prize{font-size:15px !important;}
 .room-join{width:100% !important;padding:8px 0 !important;}
 .rooms-section{margin:4px 2px 0 !important;font-size:12px !important;}
+
+/* ===== XP chip, daily/skins buttons, quests overlay ===== */
+#xp-hud{display:flex;align-items:center;gap:5px;margin-left:2px;padding:4px 11px;border-radius:11px;background:rgba(0,0,0,.32);border:1px solid rgba(176,123,255,.5);font:800 14px 'Segoe UI',sans-serif;color:#cdaaff;}
+#xp-hud .xp-ico{font-size:13px;}
+body.playing #xp-hud{display:none;}
+.rooms-actions{display:flex;justify-content:center;gap:10px;margin-top:8px;}
+.rooms-act-btn{cursor:pointer;pointer-events:auto;background:rgba(8,30,42,.85);border:1px solid rgba(127,212,255,.45);color:#dbeef5;padding:8px 18px;border-radius:20px;font:800 12.5px 'Segoe UI',sans-serif;letter-spacing:.5px;transition:.15s;}
+.rooms-act-btn:hover{border-color:#28e0c8;background:rgba(18,46,60,.95);transform:translateY(-1px);}
+.daily-list{display:flex;flex-direction:column;gap:12px;margin:14px 0;text-align:left;}
+.dq-login{font:700 13px 'Segoe UI',sans-serif;color:#ffce63;text-align:center;margin-bottom:2px;}
+.dq-login b{color:#fff;}
+.dq-item{background:rgba(8,26,36,.7);border:1px solid rgba(120,200,210,.18);border-radius:12px;padding:11px 13px;}
+.dq-top{display:flex;justify-content:space-between;align-items:center;}
+.dq-desc{font:800 14px 'Segoe UI',sans-serif;color:#eaf7ff;}
+.dq-xp{font:800 13px 'Segoe UI',sans-serif;color:#cdaaff;}
+.dq-bar{height:7px;border-radius:5px;background:rgba(255,255,255,.10);margin:8px 0 6px;overflow:hidden;}
+.dq-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#28e0c8,#7ff0dd);transition:width .3s;}
+.dq-bot{display:flex;justify-content:space-between;align-items:center;font:700 12px 'Segoe UI',sans-serif;}
+.dq-prog{color:#9fb4c0;}
+.dq-todo{color:#7fa6b4;}
+.dq-claimed{color:#33e6a4;font-weight:800;}
+.dq-claim{cursor:pointer;background:linear-gradient(135deg,#28e0c8,#7ff0dd);border:none;border-radius:16px;color:#03161a;font:800 12px 'Segoe UI',sans-serif;padding:5px 16px;}
+.dq-claim:hover{filter:brightness(1.08);}

@@ -216,14 +216,14 @@ cannonImg.src = 'assets/cannon.png';
 
 // ===== CANNON SKINS =====
 const SKINS = [
-  { file:'assets/cannon.png',   bullet:'#7ff0dd' },
-  { file:'assets/cannon-2.png', bullet:'#ffce63' },
-  { file:'assets/cannon-3.png', bullet:'#ff5d6c' },
-  { file:'assets/cannon-4.png', bullet:'#39e6c4' },
-  { file:'assets/cannon-5.png', bullet:'#b07bff' },
+  { file:'assets/cannon.png',   bullet:'#7ff0dd', name:'STANDARD', tint:null,      cost:0 },
+  { file:'assets/cannon-2.png', bullet:'#ffce63', name:'GOLD',     tint:'#ffce63', cost:300 },
+  { file:'assets/cannon-3.png', bullet:'#ff5d6c', name:'CRIMSON',  tint:'#ff5d6c', cost:600 },
+  { file:'assets/cannon-4.png', bullet:'#39e6c4', name:'EMERALD',  tint:'#39e6c4', cost:1000 },
+  { file:'assets/cannon-5.png', bullet:'#b07bff', name:'VIOLET',   tint:'#b07bff', cost:1500 },
 ];
-let skinId = 0;
-SKINS.forEach((sk,i) => { if(i===0){ sk.img=cannonImg; return; } sk.img=null; const im=new Image(); im.onload=()=>{ sk.img=im; }; im.src=sk.file; });
+let skinId = parseInt(localStorage.getItem('fishhunter_skin')||'0',10) || 0;
+SKINS.forEach((sk,i) => { sk.id=i; if(i===0){ sk.img=cannonImg; return; } sk.img=null; const im=new Image(); im.onload=()=>{ sk.img=im; }; im.src=sk.file; });
 function makeTintedCannons(){
   if (!cannonReady) return;
   for (const sk of SKINS){
@@ -236,10 +236,57 @@ function makeTintedCannons(){
     sk.tintImg = oc;
   }
 }
-function currentCannonImg(){ const sk=SKINS[clamp(wpnLevel-1,0,SKINS.length-1)]; if (sk&&sk.img&&sk.img.complete&&sk.img.naturalWidth) return sk.img; return cannonReady?cannonImg:null; }
-function currentBulletColor(){ return (SKINS[clamp(wpnLevel-1,0,SKINS.length-1)]||SKINS[0]).bullet; }
+function currentSkin(){ return SKINS[clamp(skinId,0,SKINS.length-1)]||SKINS[0]; }
+function currentCannonImg(){ const sk=currentSkin(); if (sk&&sk.img&&sk.img.complete&&sk.img.naturalWidth) return sk.img; return cannonReady?cannonImg:null; }
+function currentBulletColor(){ return currentSkin().bullet; }
+// ===== XP currency, daily login & daily quests =====
+const xpGet = () => parseInt(localStorage.getItem('fishhunter_xp')||'0',10);
+function updateXpHud(){ const e=document.getElementById('xp-val'); if(e) e.textContent=formatNum(xpGet()); }
+function xpSet(v){ localStorage.setItem('fishhunter_xp', String(Math.max(0,Math.round(v)))); updateXpHud(); }
+function xpToast(txt){ const s=document.getElementById('soon-msg'); if(s){ s.textContent=txt; s.classList.add('show'); clearTimeout(xpToast._t); xpToast._t=setTimeout(()=>s.classList.remove('show'),2200); } }
+function xpAdd(n){ n=Math.round(n); if(n<=0) return; xpSet(xpGet()+n); xpToast('+'+n+' XP'); }
+
+function grantDailyLogin(){
+  const today=todayStr(); const last=localStorage.getItem('fishhunter_xp_login')||'';
+  if(last===today) return;
+  const y=new Date(Date.now()-86400000); const ys=y.getUTCFullYear()+'-'+(y.getUTCMonth()+1)+'-'+y.getUTCDate();
+  let streak=parseInt(localStorage.getItem('fishhunter_xp_streak')||'0',10);
+  streak = (last===ys) ? streak+1 : 1;
+  const reward=Math.min(250, 50+(streak-1)*25);
+  localStorage.setItem('fishhunter_xp_login',today); localStorage.setItem('fishhunter_xp_streak',String(streak));
+  xpSet(xpGet()+reward);
+  setTimeout(()=>xpToast('Daily login +'+reward+' XP \u00b7 Day '+streak),700);
+}
+
+const QUEST_DEFS=[
+  {id:'play',  desc:'Play 3 matches', goal:3,  xp:120},
+  {id:'catch', desc:'Catch 80 fish',  goal:80, xp:150},
+  {id:'win',   desc:'Win a room',     goal:1,  xp:200},
+];
+function questState(){
+  let q; try{ q=JSON.parse(localStorage.getItem('fishhunter_quests')||'null'); }catch(e){ q=null; }
+  if(!q || q.date!==todayStr()){ q={ date:todayStr(), items:QUEST_DEFS.map(d=>({id:d.id,prog:0,claimed:false})) }; localStorage.setItem('fishhunter_quests',JSON.stringify(q)); }
+  return q;
+}
+function questSave(q){ localStorage.setItem('fishhunter_quests',JSON.stringify(q)); }
+function questProgress(id,amt){ const q=questState(); const it=q.items.find(i=>i.id===id); const def=QUEST_DEFS.find(d=>d.id===id); if(!it||!def||it.claimed) return; it.prog=Math.min(def.goal, it.prog+amt); questSave(q); }
+function renderQuests(){
+  const box=document.getElementById('daily-list'); if(!box) return;
+  const q=questState(); const streak=parseInt(localStorage.getItem('fishhunter_xp_streak')||'1',10);
+  let html='<div class="dq-login">\u2b50 Daily login claimed \u00b7 Day '+streak+' streak \u00b7 You have <b>'+formatNum(xpGet())+' XP</b></div>';
+  q.items.forEach(it=>{ const def=QUEST_DEFS.find(d=>d.id===it.id); const done=it.prog>=def.goal; const pct=Math.min(100,Math.round(it.prog/def.goal*100));
+    html+='<div class="dq-item"><div class="dq-top"><span class="dq-desc">'+def.desc+'</span><span class="dq-xp">+'+def.xp+' XP</span></div>'
+      +'<div class="dq-bar"><div class="dq-fill" style="width:'+pct+'%"></div></div>'
+      +'<div class="dq-bot"><span class="dq-prog">'+it.prog+' / '+def.goal+'</span>'
+      +(it.claimed?'<span class="dq-claimed">\u2713 CLAIMED</span>':(done?'<button class="dq-claim" data-q="'+it.id+'">CLAIM</button>':'<span class="dq-todo">in progress</span>'))
+      +'</div></div>';
+  });
+  box.innerHTML=html;
+  box.querySelectorAll('.dq-claim').forEach(b=>b.onclick=()=>{ const id=b.dataset.q; const q2=questState(); const it=q2.items.find(i=>i.id===id); const def=QUEST_DEFS.find(d=>d.id===id); if(it&&!it.claimed&&it.prog>=def.goal){ it.claimed=true; questSave(q2); xpAdd(def.xp); try{initAudio();sfxJackpot();}catch(e){} renderQuests(); } });
+}
+
 function shopOwned(){ try{ return new Set(JSON.parse(localStorage.getItem('fishhunter_skins_owned')||'[0]')); }catch(e){ return new Set([0]); } }
-function shopAvail(){ return Math.max(0, ls(K.coins) - ls('fishhunter_spent')); }
+function shopAvail(){ return xpGet(); }
 function renderShop(){
   const grid=document.getElementById('shop-grid'); if(!grid) return;
   const wEl=document.getElementById('shop-wallet'); if(wEl) wEl.textContent=formatNum(shopAvail());
@@ -254,8 +301,8 @@ function renderShop(){
     const btn=document.createElement('button'); btn.className='shop-btn';
     if(sk.id===skinId){ btn.textContent='SELECTED'; btn.disabled=true; }
     else if(owned.has(sk.id)){ btn.textContent='SELECT'; btn.onclick=()=>{ skinId=sk.id; localStorage.setItem('fishhunter_skin',String(sk.id)); renderShop(); }; }
-    else if(shopAvail()>=sk.cost){ btn.textContent='BUY '+sk.cost; btn.onclick=()=>{ localStorage.setItem('fishhunter_spent',String(ls('fishhunter_spent')+sk.cost)); owned.add(sk.id); localStorage.setItem('fishhunter_skins_owned',JSON.stringify([...owned])); skinId=sk.id; localStorage.setItem('fishhunter_skin',String(sk.id)); try{initAudio();sfxJackpot();}catch(e){} renderShop(); }; }
-    else { btn.textContent='LOCKED '+sk.cost; btn.disabled=true; btn.classList.add('locked'); }
+    else if(xpGet()>=sk.cost){ btn.textContent='BUY '+sk.cost+' XP'; btn.onclick=()=>{ xpSet(xpGet()-sk.cost); owned.add(sk.id); localStorage.setItem('fishhunter_skins_owned',JSON.stringify([...owned])); skinId=sk.id; localStorage.setItem('fishhunter_skin',String(sk.id)); try{initAudio();sfxJackpot();}catch(e){} renderShop(); }; }
+    else { btn.textContent='LOCKED '+sk.cost+' XP'; btn.disabled=true; btn.classList.add('locked'); }
     cell.appendChild(btn); grid.appendChild(cell);
   });
 }
@@ -533,7 +580,7 @@ function killFish(f){
   else {
     gained = Math.round(f.value * combo) * mult;
     score += gained; credits += f.coins * mult;
-    stats.kills++; stats.coins += f.coins;
+    stats.kills++; stats.coins += f.coins; questProgress('catch',1);
     if (f.value > stats.biggestVal){ stats.biggestVal = f.value; stats.biggest = labelFor(f.key); }
     addKillCombo();
   }
@@ -861,6 +908,7 @@ function renderRooms(){
 function renderMenu(){
   { const _ll=document.getElementById('lobby-landing'), _rv=document.getElementById('rooms-view'); if(_ll)_ll.classList.add('hidden'); if(_rv)_rv.classList.remove('hidden'); }
   { const _bv=document.getElementById('bal-val'); if(_bv) _bv.textContent=formatNum(wallet); }
+  grantDailyLogin(); updateXpHud();
   if (logoImg.complete && logoImg.naturalWidth > 0){
     const li = document.getElementById('menu-logo-img');
     const lt = document.getElementById('menu-logo-text');
@@ -1875,6 +1923,8 @@ function endGame(){
   lsS(K.coins, ls(K.coins)+stats.coins);
   if (stats.bestCombo > ls(K.bigCombo)) lsS(K.bigCombo, stats.bestCombo);
   if (mode==='tournament') saveLeaderboard(score);
+  const _mxp = Math.round(score/200) + stats.kills*2;
+  xpAdd(_mxp); questProgress('play', 1);
 
   // fill end screen
   document.getElementById('end-score').textContent  = score;
@@ -1908,12 +1958,12 @@ function endGame(){
   if (mode==='multi'){
     const topBot = bots.length ? Math.max(...bots.map(b=>b.score)) : 0;
     const won = score >= topBot;
-    if (won){ wallet += roomPrize; }
+    if (won){ wallet += roomPrize; questProgress('win',1); }
     saveWallet();
     pbEl.innerHTML = won
       ? `<span class="end-pb-hit">\u{1F3C6} YOU WON +$${roomPrize.toFixed(2)}</span>`
       : `Not 1st this time — entry $${roomEntry.toFixed(2)} lost`;
-    dEl.textContent = `Balance: $${formatNum(wallet)}`;
+    dEl.textContent = `Balance: $${formatNum(wallet)}  \u00b7  +${_mxp} XP earned`;
     if (won){ const _c=document.querySelector('#overlay-end .ov-card'); if(_c) _c.classList.add('record'); celebrate(); }
   }
 
@@ -1970,6 +2020,10 @@ function takeSeat(i,el){
 { const b=document.getElementById('btn-practice'); if(b) b.onclick=()=>{ document.getElementById('overlay-start').classList.add('hidden'); mode='free'; startGame(); }; }
 { const b=document.getElementById('btn-go-multi'); if(b) b.onclick=()=>{ const ll=document.getElementById('lobby-landing'), rv=document.getElementById('rooms-view'); if(ll)ll.classList.add('hidden'); if(rv)rv.classList.remove('hidden'); renderRooms(); }; }
 { const b=document.getElementById('btn-rooms-back'); if(b) b.onclick=()=>{ const ll=document.getElementById('lobby-landing'), rv=document.getElementById('rooms-view'); if(rv)rv.classList.add('hidden'); if(ll)ll.classList.remove('hidden'); }; }
+{ const b=document.getElementById('btn-skins'); if(b) b.onclick=()=>{ renderShop(); const o=document.getElementById('overlay-shop'); if(o) o.classList.remove('hidden'); }; }
+{ const b=document.getElementById('shop-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-shop'); if(o) o.classList.add('hidden'); }; }
+{ const b=document.getElementById('btn-daily'); if(b) b.onclick=()=>{ renderQuests(); const o=document.getElementById('overlay-daily'); if(o) o.classList.remove('hidden'); }; }
+{ const b=document.getElementById('daily-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-daily'); if(o) o.classList.add('hidden'); }; }
 { const b=document.getElementById('credits-close'); if(b) b.onclick=()=>{ const o=document.getElementById('overlay-credits'); if(o) o.classList.add('hidden'); }; }
 document.getElementById('btn-again').onclick = () => {
   if (mode === 'multi'){

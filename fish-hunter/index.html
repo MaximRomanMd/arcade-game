@@ -17,6 +17,7 @@
     <a id="back-btn" href="../game-portal/index.html" title="Back to Portal">‹ PORTAL</a>
     <button id="mute-btn" title="Sound on/off">🔊</button>
     <div id="balance-hud" title="Your balance"><span class="coin-ico"></span><span id="bal-val">10,000</span></div>
+    <div id="xp-hud" title="Your XP"><span class="xp-ico">⭐</span><span id="xp-val">0</span> XP</div>
     <div id="wallet-hud" title="Your credits"><span class="coin-ico"></span><span id="wallet-val">0</span></div>
 
     <div class="hud-block">
@@ -108,6 +109,10 @@
       <div class="rooms-head">
         <div class="rooms-title">CHOOSE A ROOM</div>
         <div class="rooms-sub">Same seeded board for everyone &middot; best score wins &middot; 90s</div>
+        <div class="rooms-actions">
+          <button id="btn-daily" class="rooms-act-btn">🎯 DAILY QUESTS</button>
+          <button id="btn-skins" class="rooms-act-btn">🎨 CANNON SKINS</button>
+        </div>
       </div>
       <div id="rooms-list" class="rooms-list"></div>
       <button id="btn-rooms-back" class="rooms-back">&larr; Back to lobby</button>
@@ -170,10 +175,18 @@
 </div>
 
 <!-- CANNON SHOP -->
+<div id="overlay-daily" class="overlay hidden">
+  <div class="ov-card">
+    <div class="ov-result">DAILY QUESTS</div>
+    <div id="daily-list" class="daily-list"></div>
+    <button id="daily-close" class="big-btn">DONE</button>
+  </div>
+</div>
+
 <div id="overlay-shop" class="overlay hidden">
   <div class="ov-card shop-card">
     <div class="ov-result">CANNON SHOP</div>
-    <div class="shop-wallet">Wallet: <strong id="shop-wallet">0</strong> credits</div>
+    <div class="shop-wallet">You have <strong id="shop-wallet">0</strong> XP</div>
     <div id="shop-grid" class="shop-grid"></div>
     <button id="shop-close" class="big-btn">DONE</button>
   </div>
