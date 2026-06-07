@@ -508,3 +508,22 @@ body.playing #xp-hud{display:none;}
 .rooms-head{margin-bottom:2px !important;}
 .room-card{padding:14px 12px !important;gap:5px !important;}
 .room-logo img{width:44px !important;height:44px !important;}
+
+/* ===== compact lobby: fit all 3 room rows + JOIN with no scroll ===== */
+.lobby2-inner{padding-top:0 !important;gap:2px !important;}
+.lobby2 .menu-logo-img2{max-width:min(15vw,96px) !important;}
+.lobby2 .lobby2-logotext{font-size:clamp(18px,2.8vw,28px) !important;}
+.rooms-head{margin-bottom:0 !important;}
+.rooms-head .rooms-title{font-size:18px !important;margin:0 !important;}
+.rooms-head .rooms-sub{font-size:10px !important;}
+.rooms-actions{margin-top:4px !important;}
+.rooms-act-btn{padding:5px 14px !important;font-size:11px !important;}
+.rooms-list{gap:7px !important;}
+.rooms-section{margin:1px 2px 0 !important;font-size:11px !important;padding-bottom:2px !important;}
+.room-card{padding:6px 8px !important;gap:1px !important;}
+.room-logo img{width:28px !important;height:28px !important;}
+.room-name{font-size:12px !important;}
+.room-meta,.room-players{font-size:9px !important;}
+.room-prize{font-size:12.5px !important;}
+.room-right{gap:3px !important;margin-top:0 !important;}
+.room-join{padding:5px 0 !important;font-size:12.5px !important;}
