@@ -451,3 +451,26 @@ body:not(.playing) #wallet-hud{display:none;}
 /* room group headers (1v1 / 6 PLAYERS / 8 PLAYERS) */
 .rooms-section{grid-column:1/-1;margin:6px 2px 2px;padding-bottom:4px;font:800 13px 'Segoe UI',sans-serif;letter-spacing:1.5px;color:#9fe6dd;border-bottom:1px solid rgba(120,200,210,.18);text-transform:uppercase;}
 .rooms-section:first-child{margin-top:0;}
+
+/* ===== idea pass: simple cannon UI off, rooms-first full-screen lobby ===== */
+#weapon-bar{display:none !important;}                 /* #3 no cannon-level bar */
+.rooms-back{display:none !important;}                 /* #5 rooms ARE the lobby now */
+.overlay.lobby2{align-items:flex-start !important;}
+.lobby2-inner{max-width:96vw !important;gap:8px !important;padding-top:6px;}
+.lobby2 .menu-logo-img2{max-width:min(28vw,170px) !important;}
+.lobby2 .lobby2-logotext{font-size:clamp(24px,4.2vw,40px) !important;}
+.rooms-view{width:100% !important;}
+.rooms-head{margin-bottom:2px;}
+.rooms-head .rooms-sub{font-size:11px;}
+/* #6 fill the screen, no scroll: dense auto-fit grid + compact vertical cards */
+.rooms-list{grid-template-columns:repeat(auto-fit,minmax(185px,1fr)) !important;max-height:none !important;overflow:visible !important;gap:9px !important;width:100% !important;}
+.room-card{flex-direction:column !important;align-items:center !important;text-align:center !important;gap:4px !important;padding:11px 9px !important;}
+.room-card:hover{transform:translateY(-3px);}
+.room-logo img{width:38px !important;height:38px !important;}
+.room-mid{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.room-name{font-size:14px !important;}
+.room-meta,.room-players{font-size:10.5px !important;}
+.room-right{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;margin-top:2px;}
+.room-prize{font-size:15px !important;}
+.room-join{width:100% !important;padding:8px 0 !important;}
+.rooms-section{margin:4px 2px 0 !important;font-size:12px !important;}

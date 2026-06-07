@@ -446,20 +446,14 @@ function tryFire(){
   const bl = cannonReady ? CN_BARREL : cannon.len;
   const muzzleX = cannon.x + Math.cos(a)*bl;
   const muzzleY = cannon.y + Math.sin(a)*bl;
-  const speed = 720 + wpnLevel*40;
+  const speed = 840;
   // higher levels fire a tight spread of pellets
-  let pellets, bdmg;
-  if (fireMode === 'focus'){ pellets = 1; bdmg = wpnLevel; }
-  else { pellets = wpnLevel; bdmg = 1; if (multiT > 0) pellets = Math.max(pellets, 5); }
-  const spread = pellets > 1 ? (multiT>0?0.12:0.07) : 0;
-  for (let i=0;i<pellets;i++){
-    const off = pellets>1 ? (i-(pellets-1)/2)*spread : 0;
-    bullets.push({
-      x:muzzleX, y:muzzleY,
-      vx:Math.cos(a+off)*speed, vy:Math.sin(a+off)*speed,
-      dmg: bdmg, r: 4 + (fireMode==='focus' ? wpnLevel*1.4 : wpnLevel), life: 3.0, trail: [], color: currentBulletColor(),
-    });
-  }
+  // simple level-1 cannon: a single bullet that deals 3 damage
+  bullets.push({
+    x:muzzleX, y:muzzleY,
+    vx:Math.cos(a)*speed, vy:Math.sin(a)*speed,
+    dmg: 3, r: 7, life: 3.0, trail: [], color: currentBulletColor(),
+  });
   // muzzle flash particles
   for (let i=0;i<6;i++){
     particles.push({ x:muzzleX, y:muzzleY,
@@ -467,7 +461,7 @@ function tryFire(){
       vy:Math.sin(a)*rand(60,180)+rand(-40,40),
       r:rand(1,3), life:.25, max:.25, c:'#aef9ec' });
   }
-  shake = Math.min(shake + wpnLevel*0.6, 7);
+  shake = Math.min(shake + 1.6, 7);
   sfxShoot();
   updateHUD();
 }
@@ -830,7 +824,7 @@ function renderRooms(){
   fmts.forEach(f=>{                                   // grouped & ordered: 1v1, then 6p, then 8p
     html+='<div class="rooms-section">'+f.name+'</div>';
     prices.forEach((pr,pi)=>{
-      const net=pr*f.seats*0.90, top=f.k==='1v1'?net:net*0.5, filled=(pi+(f.k==='1v1'?1:2))%f.seats;
+      const net=pr*f.seats*0.90, top=net, filled=(pi+(f.k==='1v1'?1:2))%f.seats;
       html+='<div class="room-card" data-fmt="'+f.k+'" data-entry="'+pr+'" data-prize="'+top.toFixed(2)+'">'
         +'<div class="room-logo"><img src="assets/logo.png?v=1" alt=""></div>'
         +'<div class="room-mid"><div class="room-name">'+f.name+'</div>'
@@ -865,7 +859,7 @@ function renderRooms(){
   }
 }
 function renderMenu(){
-  { const _ll=document.getElementById('lobby-landing'), _rv=document.getElementById('rooms-view'); if(_ll)_ll.classList.remove('hidden'); if(_rv)_rv.classList.add('hidden'); }
+  { const _ll=document.getElementById('lobby-landing'), _rv=document.getElementById('rooms-view'); if(_ll)_ll.classList.add('hidden'); if(_rv)_rv.classList.remove('hidden'); }
   { const _bv=document.getElementById('bal-val'); if(_bv) _bv.textContent=formatNum(wallet); }
   if (logoImg.complete && logoImg.naturalWidth > 0){
     const li = document.getElementById('menu-logo-img');
@@ -926,9 +920,7 @@ function update(dt){
         const tgt = fish[(Math.random()*fish.length)|0];
         if (tgt){
           const base = Math.atan2(tgt.y-bot.seat.y, tgt.x-bot.seat.x) + (Math.random()-0.5)*0.09;  // human aim wobble
-          const pellets=3, speed=840, spread=0.07;
-          for (let i=0;i<pellets;i++){ const off=(i-(pellets-1)/2)*spread;
-            bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(base+off)*speed, vy:Math.sin(base+off)*speed, dmg:1, r:7, life:3.0, trail:[], color:currentBulletColor(), owner:bot }); }
+          bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(base)*840, vy:Math.sin(base)*840, dmg:3, r:7, life:3.0, trail:[], color:currentBulletColor(), owner:bot });
         } }
     }
   }
@@ -1435,7 +1427,7 @@ function startSeating(fmt){
   combo=1; comboKills=0; comboTimer=0; spawnTimer=0; elapsed=0; shake=0; flash=0; firing=false;
   cannonHome=null; chosenSeat=null;
   stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'\u2014', biggestVal:0, coins:0 };
-  setWpn(3); updateHUD();
+  setWpn(1); updateHUD();
   if (fmt==='1v1'){
     seats=[{x:W*0.16,y:H*0.82},{x:W*0.84,y:H*0.82}];
   } else {
@@ -1844,7 +1836,7 @@ function startGame(){
   shake=0; flash=0; wpnLevel=1; firing=false;
   powerups=[]; puTimer=18; freezeT=0; doubleT=0; multiT=0; cannonHome=null; bots=[];
   stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
-  setWpn(mode==='multi'?3:1); updateHUD();
+  setWpn(1); updateHUD();
   document.getElementById('hud-combo').textContent='x1';
   document.getElementById('combo-block').classList.remove('live');
   document.getElementById('overlay-start').classList.add('hidden');
