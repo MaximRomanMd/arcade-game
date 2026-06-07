@@ -1259,7 +1259,8 @@ function drawWaterLife(ts, d){
     const fw=img.width/4, fh=img.height/4;
     const fr=(Math.floor(ts*8 + pi[3])%16+16)%16;
     const cx=(fr%4)*fw, cy=Math.floor(fr/4)*fh;
-    const dH=H*pi[2], dW=dH*(fw/fh), dx=W*pi[1]-dW/2, dy=H-dH+12;
+    const _drop = (pi[0]==='purple') ? H*0.05 : 0;   // sink purple plants so their baked base-shadow goes off-screen
+    const dH=H*pi[2], dW=dH*(fw/fh), dx=W*pi[1]-dW/2, dy=H-dH+12+_drop;
     ctx.drawImage(img, cx,cy,fw,fh, dx,dy,dW,dH);
   }
   ctx.globalAlpha=1; ctx.restore();
