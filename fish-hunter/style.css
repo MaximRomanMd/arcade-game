@@ -497,3 +497,14 @@ body.playing #xp-hud{display:none;}
 .dq-claimed{color:#33e6a4;font-weight:800;}
 .dq-claim{cursor:pointer;background:linear-gradient(135deg,#28e0c8,#7ff0dd);border:none;border-radius:16px;color:#03161a;font:800 12px 'Segoe UI',sans-serif;padding:5px 16px;}
 .dq-claim:hover{filter:brightness(1.08);}
+
+/* ===== lobby polish: full-width room grid + tighter top ===== */
+.rooms-list{grid-template-columns:repeat(5,1fr) !important;gap:12px !important;}
+@media (max-width:1100px){ .rooms-list{grid-template-columns:repeat(3,1fr) !important;} }
+@media (max-width:680px){ .rooms-list{grid-template-columns:repeat(2,1fr) !important;} }
+.lobby2-inner{padding-top:2px !important;gap:5px !important;}
+.lobby2 .menu-logo-img2{max-width:min(20vw,130px) !important;}
+.lobby2 .lobby2-logotext{font-size:clamp(22px,3.6vw,36px) !important;}
+.rooms-head{margin-bottom:2px !important;}
+.room-card{padding:14px 12px !important;gap:5px !important;}
+.room-logo img{width:44px !important;height:44px !important;}
