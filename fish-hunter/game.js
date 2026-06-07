@@ -1017,29 +1017,44 @@ function update(dt){
   // bullets
   for (const b of bullets){
     b.trail.push({x:b.x,y:b.y}); if (b.trail.length>7) b.trail.shift();
-    b.x += b.vx*dt; b.y += b.vy*dt; b.life -= dt;
-    if (b.x<-20||b.x>W+20||b.y<-20||b.y>H+20) b.life = 0;
-    // collision
-    for (const f of fish){
-      const s=f.size, dx=f.x-b.x, dy=f.y-b.y;
-      if (dx*dx+dy*dy > (s*2.2+b.r)*(s*2.2+b.r)) continue;        // broad phase
-      const mk=f.spriteFrom||f.key, mask=MASK[mk]||(f.jackpot?MASK['golden']:null);
-      let hit;
-      if (mask){
-        const an=FISHANIM[mk]||(f.jackpot?FISHANIM['golden']:null);
-        const bw=s*3.8, bh=(an&&an.ready)?bw*((an.img.height/an.rows)/(an.img.width/an.cols)):s*2.4;
-        let lx=b.x-f.x; const ly=b.y-f.y; if (f.vx<0) lx=-lx;
-        const u=(lx+bw/2)/bw, v=(ly+bh/2)/bh;
-        hit = (u>=0&&u<=1&&v>=0&&v<=1) && mask.data[Math.min(mask.mh-1,(v*mask.mh)|0)*mask.mw + Math.min(mask.mw-1,(u*mask.mw)|0)];
-      } else {
-        const ex=s*1.6, ey=s*0.82, lx=b.x-f.x, ly=b.y-f.y;
-        hit = (lx*lx)/(ex*ex)+(ly*ly)/(ey*ey) <= 1;
+    b.life -= dt;
+    // SWEPT movement: advance in <=6px sub-steps so fast bullets can't tunnel through fish
+    const move = Math.hypot(b.vx, b.vy)*dt;
+    const steps = Math.max(1, Math.ceil(move/6));
+    const sx = b.vx*dt/steps, sy = b.vy*dt/steps;
+    let done=false;
+    for (let st=0; st<steps && !done; st++){
+      b.x += sx; b.y += sy;
+      if (b.x<-20||b.x>W+20||b.y<-20||b.y>H+20){ b.life = 0; break; }
+      for (const f of fish){
+        const s=f.size, dx=f.x-b.x, dy=f.y-b.y;
+        if (dx*dx+dy*dy > (s*2.2+b.r)*(s*2.2+b.r)) continue;        // broad phase
+        const mk=f.spriteFrom||f.key, mask=MASK[mk]||(f.jackpot?MASK['golden']:null);
+        let hit=false;
+        if (mask){
+          const an=FISHANIM[mk]||(f.jackpot?FISHANIM['golden']:null);
+          const bw=s*3.8, bh=(an&&an.ready)?bw*((an.img.height/an.rows)/(an.img.width/an.cols)):s*2.4;
+          let lx=b.x-f.x; const ly=b.y-f.y; if (f.vx<0) lx=-lx;
+          const u=(lx+bw/2)/bw, v=(ly+bh/2)/bh;
+          if (u>=0&&u<=1&&v>=0&&v<=1){
+            const mx=Math.min(mask.mw-1,(u*mask.mw)|0), my=Math.min(mask.mh-1,(v*mask.mh)|0);
+            for (let oy=-1; oy<=1 && !hit; oy++) for (let ox=-1; ox<=1; ox++){   // forgiving on silhouette edges
+              const cx=mx+ox, cy=my+oy; if(cx<0||cy<0||cx>=mask.mw||cy>=mask.mh) continue;
+              if (mask.data[cy*mask.mw+cx]){ hit=true; break; }
+            }
+          }
+          if (!hit){ const ex=s*1.15, ey=s*0.6, lxx=b.x-f.x, lyy=b.y-f.y; if ((lxx*lxx)/(ex*ex)+(lyy*lyy)/(ey*ey) <= 1) hit=true; }   // always-hit body core
+        } else {
+          const ex=s*1.6, ey=s*0.82, lx=b.x-f.x, ly=b.y-f.y;
+          hit = (lx*lx)/(ex*ex)+(ly*ly)/(ey*ey) <= 1;
+        }
+        if (hit){ hurtFish(f, b.dmg, b.x, b.y, b.owner); b.life = 0; done=true; break; }
       }
-      if (hit){ hurtFish(f, b.dmg, b.x, b.y, b.owner); b.life = 0; break; }
-    }
-    if (b.life>0) for (const pu of powerups){
-      const dx=pu.x-b.x, dy=pu.y-b.y;
-      if (dx*dx+dy*dy < (pu.r+b.r+6)*(pu.r+b.r+6)){ activatePowerup(pu); b.life=0; break; }
+      if (done) break;
+      for (const pu of powerups){
+        const dx=pu.x-b.x, dy=pu.y-b.y;
+        if (dx*dx+dy*dy < (pu.r+b.r+6)*(pu.r+b.r+6)){ activatePowerup(pu); b.life=0; done=true; break; }
+      }
     }
   }
   bullets = bullets.filter(b => b.life > 0);
