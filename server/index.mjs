@@ -6,6 +6,7 @@ import {
 } from './db/index.mjs';
 import { walletBalance, walletWager, walletWin, isMock, gameType } from './platform/callPartner.mjs';
 import { verifyLaunch, requirePlatformAuth } from './platform/security.mjs';
+import { replay } from './sim/core.mjs';
 
 const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -69,11 +70,19 @@ const routes = {
     const b = await readBody(req); const round = getRound(b.roundId);
     if (!round || round.userId !== c.user.id) return { code: 404, body: { error: 'ROUND_NOT_FOUND' } };
     if (round.status === 'SETTLED') return { code: 200, body: { payout: round.payout, balance: await walletBalance({ platform: c.platform, userId: c.user.id, externalPlayerId: c.user.externalPlayerId }), replay: true } };
-    const score = Math.max(0, Number(b.score || 0));
+    // SERVER-AUTHORITATIVE score: replay the recorded inputs against the round's
+    // seed. The client's claimed score is never trusted — only cross-checked.
+    let score, verified = false;
+    if (Array.isArray(b.inputs)) {
+      score = replay(round.seed, b.inputs).score; verified = true;
+      if (b.score != null && Number(b.score) !== score) console.warn('[settle] score mismatch', { roundId: round.id, claimed: b.score, authoritative: score });
+    } else if (process.env.REQUIRE_REPLAY === 'true') {
+      return { code: 400, body: { error: 'INPUTS_REQUIRED' } };
+    } else { score = Math.max(0, Number(b.score || 0)); }   // non-strict fallback (untrusted)
     const payout = Math.round(Math.min(score / 2000, 5) * (round.stake || 1) * 100) / 100;
     if (payout > 0) await walletWin({ platform: c.platform, userId: c.user.id, externalPlayerId: c.user.externalPlayerId, roundId: round.id, uniqueId: `win:${round.id}`, amount: payout, gameId: round.id });
     settleRound(round.id, score, payout);
-    return { code: 200, body: { payout, seed: round.seed, balance: await walletBalance({ platform: c.platform, userId: c.user.id, externalPlayerId: c.user.externalPlayerId }) } };
+    return { code: 200, body: { payout, score, verified, seed: round.seed, balance: await walletBalance({ platform: c.platform, userId: c.user.id, externalPlayerId: c.user.externalPlayerId }) } };
   },
 
   // ── ops / admin (server-to-server API key) ──
