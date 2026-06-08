@@ -11,6 +11,10 @@
 <meta property="og:image" content="/assets/logo.png">
 <meta property="og:type" content="website">
 <link rel="icon" type="image/png" href="/assets/logo.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/assets/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Abyss Hunter">
 <style>
   :root{
     --bg-0:#02080f; --bg-1:#04121f; --bg-2:#082236;
@@ -193,6 +197,11 @@
         String(r.name||'Hunter').replace(/[<>]/g,'')+'</span><span class="sc">'+fmt(r.score)+'</span></div>';
     }).join('');
   })();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function(){}); });
+  }
 </script>
 </body>
 </html>

@@ -4,8 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#04111f">
-<title>ABYSS HUNTER</title>
+<title>ABYSS HUNTER — Play</title>
+<meta name="description" content="Play ABYSS HUNTER — a deep-sea skill arcade. Aim, fire, chain combos and out-hunt the table on a shared seeded board.">
+<meta property="og:title" content="ABYSS HUNTER — Deep-Sea Skill Arcade">
+<meta property="og:description" content="Dive the abyss. Out-hunt the table. Top 3 win the pot.">
+<meta property="og:image" content="https://nextbytegames.com/assets/logo.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/assets/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Abyss Hunter">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -219,5 +229,6 @@
 </div>
 
 <script>(function(){var s=document.createElement("script");s.src="game.js";document.body.appendChild(s);})();</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(){});});}</script>
 </body>
 </html>
