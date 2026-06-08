@@ -1125,13 +1125,13 @@ function openGame(game) {
     localStorage.setItem(`portal_played_${game}_date`, today);
 
     const urls = {
-        snake:  '../Snake-Game/index.html',
-        ultra:  '../2048-game/index.html',
-        void:   '../void-shift/index.html',
-        blob:   '../blob-game/index.html',
-        bingo:  '../bingo-game/index.html',
-        tower:  '../tower-rush/index.html',
-        fish:   '../fish-hunter/index.html',
+        snake:  '/snake/',
+        ultra:  '/2048/',
+        void:   '/void/',
+        blob:   '/blob/',
+        bingo:  '/bingo/',
+        tower:  '/tower/',
+        fish:   '/fish/',
     };
     if (urls[game]) window.location.href = urls[game];
 }

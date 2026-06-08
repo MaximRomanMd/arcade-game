@@ -3,27 +3,16 @@
    Offline-ready caching for instant loads
 ══════════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'arcade-portal-v2';
+const CACHE_NAME = 'arcade-portal-v3';
 
-// Files to pre-cache on install (portal shell)
+// Files to pre-cache on install (portal shell) — served at the site root
 const PRECACHE = [
-    '/arcade-game/game-portal/index.html',
-    '/arcade-game/game-portal/style.css',
-    '/arcade-game/game-portal/portal.js',
-    '/arcade-game/game-portal/sound-engine.js',
-    '/arcade-game/game-portal/manifest.json',
-    '/arcade-game/game-portal/icon.svg',
-];
-
-// Game files to cache on first visit
-const GAME_PATTERNS = [
-    /\/arcade-game\/Snake-Game\//,
-    /\/arcade-game\/2048-game\//,
-    /\/arcade-game\/void-shift\//,
-    /\/arcade-game\/blob-game\//,
-    /\/arcade-game\/bingo-game\//,
-    /\/arcade-game\/tower-rush\//,
-    /\/arcade-game\/fish-hunter\//,
+    '/',
+    '/style.css',
+    '/portal.js',
+    '/sound-engine.js',
+    '/manifest.json',
+    '/icon.svg',
 ];
 
 // ── INSTALL: pre-cache portal shell ──────────────────
@@ -55,14 +44,12 @@ self.addEventListener('fetch', event => {
     if (!url.origin.includes('github.io') && !url.hostname === 'localhost') return;
 
     const isHTML      = event.request.headers.get('accept')?.includes('text/html');
-    const isPortal    = url.pathname.includes('/game-portal/');
-    const isGameFile  = GAME_PATTERNS.some(p => p.test(url.pathname));
     const isStaticAsset = /\.(css|js|svg|png|jpg|webp|woff2?|ico)$/.test(url.pathname);
 
     if (isHTML) {
         // Network First for HTML — always try to get fresh page
         event.respondWith(networkFirst(event.request));
-    } else if (isStaticAsset && (isPortal || isGameFile)) {
+    } else if (isStaticAsset) {
         // Cache First for static assets (CSS, JS, images)
         event.respondWith(cacheFirst(event.request));
     } else {
@@ -101,7 +88,7 @@ async function networkFirst(request) {
         if (cached) return cached;
         // Offline fallback for HTML
         if (request.headers.get('accept')?.includes('text/html')) {
-            const portalFallback = await caches.match('/arcade-game/game-portal/index.html');
+            const portalFallback = await caches.match('/');
             if (portalFallback) return portalFallback;
         }
         return new Response('You are offline. Please reconnect to play.', {

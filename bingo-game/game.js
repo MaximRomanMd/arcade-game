@@ -2006,7 +2006,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
   function confirmExit() {
-    window.location.href = '../game-portal/index.html';
+    window.location.href = '/';
   }
   document.getElementById('exit-portal-btn').addEventListener('click', openExitDialog);
   document.getElementById('exit-confirm-no').addEventListener('click', closeExitDialog);

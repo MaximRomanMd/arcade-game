@@ -1026,7 +1026,7 @@ document.addEventListener('keydown', e => {
   }
   function confirmExit() {
     if (typeof saveAll === 'function') saveAll();
-    window.location.href = '../game-portal/index.html';
+    window.location.href = '/';
   }
   document.getElementById('exit-portal-btn').addEventListener('click', openExitDialog);
   document.getElementById('exit-confirm-no').addEventListener('click', closeExitDialog);

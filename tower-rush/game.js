@@ -1646,7 +1646,7 @@ function showGameOver() {
       </div>
       <div class="end-btns">
         <button class="end-btn primary" onclick="startGame()">▶ PLAY AGAIN</button>
-        <button class="end-btn secondary" onclick="window.location.href='../game-portal/index.html'">🏠 PORTAL</button>
+        <button class="end-btn secondary" onclick="window.location.href='/'">🏠 PORTAL</button>
       </div>
     </div>`;
   if (animId) { cancelAnimationFrame(animId); animId = null; }
@@ -1675,7 +1675,7 @@ function showVictory() {
       </div>
       <div class="end-btns">
         <button class="end-btn primary" onclick="startGame()">▶ PLAY AGAIN</button>
-        <button class="end-btn secondary" onclick="window.location.href='../game-portal/index.html'">🏠 PORTAL</button>
+        <button class="end-btn secondary" onclick="window.location.href='/'">🏠 PORTAL</button>
       </div>
     </div>`;
   if (animId) { cancelAnimationFrame(animId); animId = null; }

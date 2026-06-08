@@ -665,7 +665,7 @@ document.getElementById('help-close').addEventListener('click', () => {
     const nick   = localStorage.getItem('voidshift_nick') || 'PLAYER';
     const stored = parseInt(localStorage.getItem('voidshift_best_' + nick) || '0', 10);
     if (score > stored) localStorage.setItem('voidshift_best_' + nick, String(score));
-    window.location.href = '../game-portal/index.html';
+    window.location.href = '/';
   }
   document.getElementById('exit-portal-btn').addEventListener('click', openExitDialog);
   document.getElementById('exit-confirm-no').addEventListener('click', closeExitDialog);
