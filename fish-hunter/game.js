@@ -14,7 +14,7 @@ const ctx    = canvas.getContext('2d');
 let   W = 0, H = 0, DPR = 1;
 
 function resize(){
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  DPR = Math.min(window.devicePixelRatio || 1, 1.5);   // cap render scale: big fill-rate win on retina, minimal sharpness loss
   W = window.innerWidth;
   H = window.innerHeight;
   canvas.width  = Math.floor(W * DPR);

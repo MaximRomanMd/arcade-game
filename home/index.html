@@ -32,10 +32,9 @@
     background:
       radial-gradient(120% 80% at 50% -10%, rgba(40,224,200,.16), transparent 55%),
       linear-gradient(180deg, #06324a 0%, #052438 32%, #03182a 64%, #02080f 100%);}
-  .rays{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
-    background:repeating-linear-gradient(105deg, rgba(174,249,236,.06) 0 2px, transparent 2px 60px);
-    mix-blend-mode:screen;animation:drift 22s linear infinite;}
-  @keyframes drift{to{background-position:600px 0;}}
+  /* static light-ray texture — no mix-blend-mode / no paint animation (cheap) */
+  .rays{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.32;
+    background:repeating-linear-gradient(105deg, rgba(174,249,236,.05) 0 2px, transparent 2px 70px);}
 
   .wrap{max-width:1080px;margin:0 auto;padding:0 20px;}
 
@@ -57,9 +56,8 @@
   .cta{display:inline-flex;align-items:center;gap:10px;margin-top:30px;text-decoration:none;
     font-size:20px;font-weight:900;letter-spacing:3px;color:#03161a;
     background:linear-gradient(135deg,var(--teal),var(--teal-soft));padding:18px 42px;border-radius:16px;
-    box-shadow:0 12px 40px rgba(40,224,200,.5);transition:.16s;animation:pulse 2.8s ease-in-out infinite;}
-  .cta:hover{transform:translateY(-3px);box-shadow:0 16px 50px rgba(40,224,200,.65);}
-  @keyframes pulse{0%,100%{box-shadow:0 12px 40px rgba(40,224,200,.5);}50%{box-shadow:0 12px 52px rgba(40,224,200,.72);}}
+    box-shadow:0 12px 44px rgba(40,224,200,.55);transition:.16s;}
+  .cta:hover{transform:translateY(-3px);box-shadow:0 16px 50px rgba(40,224,200,.7);}
   .hero .sub-note{margin-top:14px;font-size:12px;color:var(--ink-dim);letter-spacing:1px;}
 
   /* ── prize strip ── */
