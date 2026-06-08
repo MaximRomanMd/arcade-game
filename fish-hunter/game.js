@@ -53,6 +53,32 @@ function resize(){
   canvas.style.width  = W + 'px';
   canvas.style.height = H + 'px';
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  buildScreenGrads();
+}
+// Cached full-screen gradients (rebuilt only on resize) — the water overlay and
+// vignette are identical every frame, so don't reallocate them per frame.
+let _ovGrad=null, _vigPlay=null, _vigMenu=null;
+function buildScreenGrads(){
+  _ovGrad = ctx.createLinearGradient(0,0,0,H);
+  _ovGrad.addColorStop(0,'rgba(4,18,31,.16)'); _ovGrad.addColorStop(0.55,'rgba(2,12,22,.10)'); _ovGrad.addColorStop(1,'rgba(1,7,13,.48)');
+  _vigPlay = ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.85);
+  _vigPlay.addColorStop(0,'rgba(0,0,0,0)'); _vigPlay.addColorStop(1,'rgba(0,0,0,0.5)');
+  _vigMenu = ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.85);
+  _vigMenu.addColorStop(0,'rgba(0,0,0,0)'); _vigMenu.addColorStop(1,'rgba(0,0,0,0.1)');
+}
+// Memoized soft glow sprites — replaces per-bullet createRadialGradient + the
+// per-draw shadowBlur (both very expensive repeated every frame, per bullet).
+const _glowCache = new Map();
+function glowSprite(color){
+  let c = _glowCache.get(color);
+  if (c) return c;
+  c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(32,32,1,32,32,32);
+  g.addColorStop(0,'#ffffff'); g.addColorStop(0.45,color); g.addColorStop(1,'rgba(0,0,0,0)');
+  x.fillStyle = g; x.beginPath(); x.arc(32,32,32,0,6.28); x.fill();
+  _glowCache.set(color, c);
+  return c;
 }
 window.addEventListener('resize', resize);
 resize();
@@ -1358,9 +1384,7 @@ function drawBackground(time){
     const ir = sceneImg.width/sceneImg.height, cr = W/H;
     let dw,dh; if (cr>ir){ dw=W; dh=W/ir; } else { dh=H; dw=H*ir; }
     ctx.drawImage(sceneImg, (W-dw)/2, (H-dh)/2, dw, dh);
-    const ov = ctx.createLinearGradient(0,0,0,H);
-    ov.addColorStop(0,'rgba(4,18,31,.16)'); ov.addColorStop(0.55,'rgba(2,12,22,.10)'); ov.addColorStop(1,'rgba(1,7,13,.48)');
-    ctx.fillStyle = ov; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = _ovGrad; ctx.fillRect(0,0,W,H);   // cached (built in resize)
     // drifting caustic light — living water over the scene
     ctx.save(); ctx.globalCompositeOperation='lighter';
     for (let i=0;i<4;i++){          // 4 (was 6): fewer per-frame radial-gradient 'lighter' fills, near-identical look
@@ -1866,11 +1890,8 @@ function render(time){
       ctx.beginPath(); ctx.arc(tpt.x,tpt.y,b.r*0.7,0,6.28); ctx.fill();
     }
     ctx.globalAlpha=1;
-    ctx.shadowColor=b.color||'#aef9ec'; ctx.shadowBlur=14;
-    const bgr=ctx.createRadialGradient(b.x,b.y,1,b.x,b.y,b.r*1.6);
-    bgr.addColorStop(0,'#ffffff'); bgr.addColorStop(0.5,b.color||'#7ff0dd'); bgr.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=bgr;
-    ctx.beginPath(); ctx.arc(b.x,b.y,b.r*1.6,0,6.28); ctx.fill();
+    const gs=glowSprite(b.color||'#7ff0dd'), gr=b.r*3.6;   // pre-rendered glow (no per-bullet gradient/shadowBlur)
+    ctx.drawImage(gs, b.x-gr/2, b.y-gr/2, gr, gr);
   }
   ctx.restore();
 
@@ -1879,7 +1900,7 @@ function render(time){
   for (const p of particles){
     ctx.globalAlpha = clamp(p.life/p.max,0,1);
     ctx.fillStyle = p.c;
-    if (p.star){ ctx.shadowColor=p.c; ctx.shadowBlur=8; drawStar(p.x,p.y,p.r*2.4); ctx.shadowBlur=0; }
+    if (p.star){ drawStar(p.x,p.y,p.r*2.4); }   // additive 'lighter' already glows; shadowBlur dropped (expensive)
     else { ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.28); ctx.fill(); }
   }
   ctx.restore();
@@ -1902,9 +1923,7 @@ function render(time){
   ctx.restore();
 
   // vignette + impact flash (screen-space, no shake)
-  const vg = ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.85);
-  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1, phase==='playing' ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.1)');
-  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = (phase==='playing' ? _vigPlay : _vigMenu); ctx.fillRect(0,0,W,H);   // cached vignette
 
   if (phase==='playing' && combo >= 3){
     const pulse = 0.5 + 0.5*Math.sin(performance.now()*0.006);
