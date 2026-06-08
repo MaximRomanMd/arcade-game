@@ -186,6 +186,7 @@ let multiSeat = 0;
 let cannonHome = null, seats = [], chosenSeat = null;
 let wallet = (parseFloat(localStorage.getItem('fishhunter_wallet')) || 10000), bots = [];
 let roomEntry = 0, roomPrize = 0;
+let apiRound = null, apiSeed = null;   // seamless-wallet round (API mode): server roundId + server-chosen seed
 function saveWallet(){
   try { localStorage.setItem('fishhunter_wallet', String(wallet)); } catch(e){}
   const _a=document.getElementById('bal-val');       if(_a) _a.textContent=formatNum(wallet);
@@ -518,6 +519,11 @@ const MATCH_SEEDS = [
 ];
 // Pick a random curated board, seed the RNG, and preload its boss sprites.
 function pickPoolSeed(){
+  if (apiSeed != null){                         // API mode: use the server-chosen board
+    matchSeed = apiSeed; setSeed(matchSeed); apiSeed = null;
+    const e = MATCH_SEEDS.find(x => x[0] === matchSeed); if (e) for (const k of e[1]) ensureAnim(k);
+    return matchSeed;
+  }
   const e = MATCH_SEEDS[(Math.random()*MATCH_SEEDS.length)|0];
   matchSeed = e[0]; setSeed(matchSeed);
   for (const k of e[1]) ensureAnim(k);
@@ -1002,13 +1008,23 @@ function renderRooms(){
       const card = ev.target && ev.target.closest ? ev.target.closest('.room-card') : null;
       if (!card) return;
       ev.preventDefault(); ev.stopPropagation();
+      const entry = parseFloat(card.dataset.entry||'0'), prize = parseFloat(card.dataset.prize||'0');
+      multiFormat = card.dataset.fmt || '6p';
+      const enter = () => { const os = document.getElementById('overlay-start'); if (os) os.classList.add('hidden'); startSeating(multiFormat); };
+      if (window.ABYSS_API) {
+        // Seamless wallet: the backend debits the stake + picks the board (seed).
+        AbyssWallet.startRound(entry).then(r => {
+          if (!r.ok){ alert(r.error==='INSUFFICIENT_FUNDS' ? 'Balance too low for this room (needs $'+entry.toFixed(2)+').' : 'Could not start the round. Try again.'); return; }
+          apiRound = r.roundId; apiSeed = r.seed; roomEntry = entry; roomPrize = 0;
+          wallet = r.balance; saveWallet();
+          enter();
+        });
+        return;
+      }
       try {
-        const entry = parseFloat(card.dataset.entry||'0'), prize = parseFloat(card.dataset.prize||'0');
         if (wallet < entry){ alert('Balance too low for this room (needs $'+entry.toFixed(2)+').'); return; }
         wallet -= entry; roomEntry = entry; roomPrize = prize; saveWallet();   // pay the entry fee
-        multiFormat = card.dataset.fmt || '6p';
-        const os = document.getElementById('overlay-start'); if (os) os.classList.add('hidden');
-        startSeating(multiFormat);
+        enter();
       } catch(err){ console.error('JOIN failed:', err); alert('Join error: '+err.message); }
     };
     list.addEventListener('click', enterRoom);
@@ -1016,6 +1032,8 @@ function renderRooms(){
   }
 }
 function renderMenu(){
+  // API mode: show the player's real (server) balance in the lobby.
+  if (window.ABYSS_API && window.AbyssWallet){ AbyssWallet.ready.then(b => { if (!isNaN(b)){ wallet = b; saveWallet(); } }); }
   { const _ll=document.getElementById('lobby-landing'), _rv=document.getElementById('rooms-view'); if(_ll)_ll.classList.add('hidden'); if(_rv)_rv.classList.remove('hidden'); }
   { const _bv=document.getElementById('bal-val'); if(_bv) _bv.textContent=formatNum(wallet); }
   grantDailyLogin(); updateXpHud();
@@ -2094,7 +2112,20 @@ function endGame(){
   } else lbEl.innerHTML = '';
 
   // ── multiplayer settlement: winner (highest score) takes the prize ──
-  if (mode==='multi'){
+  if (mode==='multi' && window.ABYSS_API && apiRound){
+    // Seamless wallet: backend settles (credits the win), authoritative balance.
+    const rid = apiRound; apiRound = null;
+    pbEl.innerHTML = '<span class="end-pb-hit">Settling...</span>';
+    dEl.textContent = '+' + _mxp + ' XP earned';
+    AbyssWallet.settleRound(rid, score).then(r => {
+      if (!r.ok){ pbEl.innerHTML = 'Settlement failed - balance unchanged'; dEl.textContent = 'Balance: $' + formatNum(wallet) + '  /  +' + _mxp + ' XP'; return; }
+      wallet = r.balance; saveWallet();
+      const won = r.payout > 0;
+      pbEl.innerHTML = won ? ('<span class="end-pb-hit">YOU WON +$' + Number(r.payout).toFixed(2) + '</span>') : ('Entry $' + roomEntry.toFixed(2) + ' settled - no payout this dive');
+      dEl.textContent = 'Balance: $' + formatNum(wallet) + '  /  +' + _mxp + ' XP';
+      if (won){ const _c=document.querySelector('#overlay-end .ov-card'); if(_c) _c.classList.add('record'); celebrate(); }
+    });
+  } else if (mode==='multi'){
     const topBot = bots.length ? Math.max(...bots.map(b=>b.score)) : 0;
     const won = score >= topBot;
     if (won){ wallet += roomPrize; questProgress('win',1); }
