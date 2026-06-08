@@ -1986,7 +1986,7 @@ function endGame(){
   lsS(K.games, ls(K.games)+1);
   lsS(K.coins, ls(K.coins)+stats.coins);
   if (stats.bestCombo > ls(K.bigCombo)) lsS(K.bigCombo, stats.bestCombo);
-  if (mode==='tournament' || mode==='multi') saveLeaderboard(score);   // room play now records on the weekly leaderboard (tournament entry was removed in the lobby redesign)
+  if (mode==='multi') saveLeaderboard(score);   // weekly leaderboard records PAID ROOMS only (free practice does not count)
   const _mxp = Math.round(score/500) + Math.floor(stats.kills/2);
   xpAdd(_mxp); questProgress('play', 1);
 
