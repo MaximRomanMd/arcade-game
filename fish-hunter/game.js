@@ -525,7 +525,7 @@ function pickPoolSeed(){
 
 function initBubbles(){
   bubbles = [];
-  for (let i=0;i<46;i++){
+  for (let i=0;i<28;i++){          // 28 (was 46): fewer ambient arc fills per frame
     bubbles.push({ x:Math.random()*W, y:Math.random()*H,
       r:rand(1,4), spd:rand(12,40), drift:rand(-8,8), a:rand(.06,.22) });
   }
@@ -756,6 +756,7 @@ function spawnCoinFx(x,y,n){
 }
 function updateFx(dt){
   updateBgLife(dt);
+  if (particles.length > 240) particles.splice(0, particles.length - 240);   // hard cap: bound burst spikes (many simultaneous kills)
   creditsShown += (credits - creditsShown) * Math.min(1, dt*3.5);
   if (Math.abs(credits - creditsShown) < 1) creditsShown = credits;
   { const _v=(mode==='multi')?'∞':Math.max(0,Math.round(creditsShown)); const _e=document.getElementById('hud-credits'); if(_e) _e.textContent=_v; const _w=document.getElementById('wallet-val'); if(_w) _w.textContent=_v; }
