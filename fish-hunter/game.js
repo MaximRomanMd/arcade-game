@@ -43,9 +43,10 @@ function prune(arr, keep){ let w = 0; for (let i = 0; i < arr.length; i++){ cons
 const canvas = document.getElementById('game');
 const ctx    = canvas.getContext('2d');
 let   W = 0, H = 0, DPR = 1;
+let   QUALITY = 'high';   // adaptive: drops to 'low' (lower render scale + fewer effects) if the device can't hold fps
 
 function resize(){
-  DPR = Math.min(window.devicePixelRatio || 1, 1.5);   // cap render scale: big fill-rate win on retina, minimal sharpness loss
+  DPR = Math.min(window.devicePixelRatio || 1, QUALITY==='low' ? 1.0 : 1.5);   // cap render scale (lower when adaptive quality drops); big fill-rate win on retina
   W = window.innerWidth;
   H = window.innerHeight;
   canvas.width  = Math.floor(W * DPR);
@@ -756,7 +757,7 @@ function spawnCoinFx(x,y,n){
 }
 function updateFx(dt){
   updateBgLife(dt);
-  if (particles.length > 240) particles.splice(0, particles.length - 240);   // hard cap: bound burst spikes (many simultaneous kills)
+  { const _pcap = QUALITY==='low' ? 120 : 240; if (particles.length > _pcap) particles.splice(0, particles.length - _pcap); }   // hard cap: bound burst spikes
   creditsShown += (credits - creditsShown) * Math.min(1, dt*3.5);
   if (Math.abs(credits - creditsShown) < 1) creditsShown = credits;
   { const _v=(mode==='multi')?'∞':Math.max(0,Math.round(creditsShown)); const _e=document.getElementById('hud-credits'); if(_e) _e.textContent=_v; const _w=document.getElementById('wallet-val'); if(_w) _w.textContent=_v; }
@@ -1388,7 +1389,7 @@ function drawBackground(time){
     ctx.fillStyle = _ovGrad; ctx.fillRect(0,0,W,H);   // cached (built in resize)
     // drifting caustic light — living water over the scene
     ctx.save(); ctx.globalCompositeOperation='lighter';
-    for (let i=0;i<4;i++){          // 4 (was 6): fewer per-frame radial-gradient 'lighter' fills, near-identical look
+    for (let i=0;i<(QUALITY==='low'?2:4);i++){          // 4 (was 6), 2 on low-quality: fewer per-frame radial-gradient 'lighter' fills
       const cx2 = (((Math.sin(i*2.3)*0.5+0.5) + ts*0.015*(1+i*0.22)) % 1) * W;
       const cy2 = H*(0.16+0.13*i) + Math.sin(ts*0.55+i*1.3)*16;
       const rr = 150+i*34;
@@ -1980,11 +1981,25 @@ function render(time){
   }
 }
 
+// ── adaptive quality ─────────────────────────────────────────────
+// Watch the real frame time; if the device can't sustain fps, drop render scale
+// + effects so play stays smooth (and the dt-clamp slow-motion never kicks in).
+// Strong devices stay at full quality. Hysteresis + sustain timers avoid flapping.
+let _fpsEMA = 60, _qLowT = 0, _qHighT = 0;
+function setQuality(q){ if (q===QUALITY) return; QUALITY = q; _qLowT = 0; _qHighT = 0; resize(); }
+function updateQuality(realDt){
+  if (realDt > 0 && realDt < 1) _fpsEMA += (1/realDt - _fpsEMA) * 0.06;
+  if (QUALITY==='high'){ if (_fpsEMA < 42){ _qLowT += realDt; if (_qLowT > 1.5) setQuality('low'); } else _qLowT = 0; }
+  else                 { if (_fpsEMA > 56){ _qHighT += realDt; if (_qHighT > 4) setQuality('high'); } else _qHighT = 0; }
+}
+
 // ── loop ─────────────────────────────────────────────────────────
 let last = performance.now();
 function loop(now){
-  const dt = Math.min((now-last)/1000, 0.05);
+  const realDt = (now - last) / 1000;
+  const dt = Math.min(realDt, 0.05);
   last = now;
+  updateQuality(realDt);
   try {
     if (phase === 'boot')        updateBoot(dt);
     else if (phase === 'dive')   updateDive(dt);
