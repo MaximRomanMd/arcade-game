@@ -982,11 +982,12 @@ function update(dt){
       }
       bot.fireT -= dt;
       if (fish.length && bot.fireT<=0){ bot.fireT = rand(0.18,0.26);   // human-like reaction (a touch slower than your hold-fire)
-        const tgt = fish[(Math.random()*fish.length)|0];
-        if (tgt){
-          const base = Math.atan2(tgt.y-bot.seat.y, tgt.x-bot.seat.x) + (Math.random()-0.5)*0.09;  // human aim wobble
-          bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(base)*840, vy:Math.sin(base)*840, dmg:3, r:7, life:3.0, trail:[], color:currentBulletColor(), owner:bot });
-        } }
+        // Fire along the barrel's actual pointing direction (bot.aimA), not a
+        // random fish — otherwise bullets spray everywhere while the barrel
+        // points elsewhere. A tiny wobble keeps it from looking robotic.
+        const base = bot.aimA + (Math.random()-0.5)*0.09;
+        bullets.push({ x:bot.seat.x, y:bot.seat.y, vx:Math.cos(base)*840, vy:Math.sin(base)*840, dmg:3, r:7, life:3.0, trail:[], color:currentBulletColor(), owner:bot });
+      }
     }
   }
   // auto-fire while holding
