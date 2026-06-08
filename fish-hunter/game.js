@@ -34,6 +34,11 @@ if (typeof window !== 'undefined'){
   window.addEventListener('unhandledrejection', function(e){ reportError(e && e.reason, 'promise'); });
 }
 
+// In-place array compaction — the large per-frame pools (particles/bullets/
+// fish) would otherwise allocate a brand-new array via .filter() every frame.
+// prune() compacts in place (same array), removing that per-frame GC churn.
+function prune(arr, keep){ let w = 0; for (let i = 0; i < arr.length; i++){ const v = arr[i]; if (keep(v)) arr[w++] = v; } arr.length = w; }
+
 // ── canvas / context ────────────────────────────────────────────
 const canvas = document.getElementById('game');
 const ctx    = canvas.getContext('2d');
@@ -810,14 +815,14 @@ function updateAmbient(dt){
     f.y = f.baseY + Math.sin(f.t*f.freq*3 + f.phase)*f.amp;
     if (f.x < -f.size*3 || f.x > W+f.size*3) f._gone = true;
   }
-  fish = fish.filter(f => !f._gone);
+  prune(fish, f => !f._gone);
   while (fish.length < 9) spawnAmbient();
   for (const bu of bubbles){
     bu.y -= bu.spd*dt; bu.x += bu.drift*dt;
     if (bu.y < -10){ bu.y = H+10; bu.x = Math.random()*W; }
   }
   for (const p of particles){ p.life -= dt; p.x += p.vx*dt; p.y += p.vy*dt; }
-  particles = particles.filter(p => p.life > 0);
+  prune(particles, p => p.life > 0);
 }
 
 // ── boot: splash + loading (waits for the real assets), then menu ──
@@ -1056,7 +1061,7 @@ function update(dt){
     const mg = f.size*3;
     if (f.x<-mg || f.x>W+mg || f.y<-mg || f.y>H+mg) f._gone = true;
   }
-  fish = fish.filter(f => !f._gone);
+  prune(fish, f => !f._gone);
 
   // bullets
   for (const b of bullets){
@@ -1101,7 +1106,7 @@ function update(dt){
       }
     }
   }
-  bullets = bullets.filter(b => b.life > 0);
+  prune(bullets, b => b.life > 0);
 
   // particles
   for (const p of particles){
@@ -1110,7 +1115,7 @@ function update(dt){
     p.x += p.vx*dt; p.y += p.vy*dt;
     p.vx *= 0.96; p.vy *= 0.96;
   }
-  particles = particles.filter(p => p.life > 0);
+  prune(particles, p => p.life > 0);
 
   // rings / pops
   for (const r of rings){ r.life -= dt; r.r += (r.max-r.r)*dt*6; }

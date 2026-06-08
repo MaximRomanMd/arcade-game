@@ -665,3 +665,10 @@ body.playing #xp-hud{display:none;}
   background:rgba(255,93,108,.16);border:1px solid rgba(255,93,108,.5);color:#ffd9de;
   font:700 12.5px var(--font);letter-spacing:.5px;padding:9px 16px;border-radius:11px;backdrop-filter:blur(6px);max-width:90vw;text-align:center;}
 #err-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── perf: drop backdrop-filter blur on the in-play HUD ──
+   Several blurred glass elements layered over the animating canvas are GPU-
+   heavy (esp. mobile). Remove the blur during play; a denser bg keeps contrast. */
+#hud .hud-block,#hud #back-btn,#hud #mute-btn,#hud #exit-btn,#hud #wallet-hud{backdrop-filter:none !important;}
+#hud .hud-block,#hud #back-btn,#hud #mute-btn,#hud #wallet-hud{background:rgba(6,22,34,.82);}
+#hud #exit-btn{background:rgba(44,12,16,.85);}
