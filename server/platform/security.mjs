@@ -61,10 +61,10 @@ export function requirePlatformAuth(req) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-// Verify a partner-minted launch token: HMAC(`${userId}.${ts}`, LAUNCH_SECRET).
+// Verify a partner-minted launch token: HMAC(`${userId}.${ts}`, secret).
+// Signed with the platform's webhookSecret (or LAUNCH_SECRET fallback).
 // Returns { userId } or null. (Mirrors the iframe launch-session handshake.)
-export function verifyLaunch(userId, ts, sig) {
-  const secret = process.env.LAUNCH_SECRET || '';
+export function verifyLaunch(userId, ts, sig, secret = process.env.LAUNCH_SECRET || '') {
   if (!secret || !userId || !freshTimestamp(ts)) return null;
   const expected = createHmac('sha256', secretKey(secret)).update(`${userId}.${ts}`, 'utf8').digest('hex');
   const a = Buffer.from(String(sig || '').toLowerCase()); const b = Buffer.from(expected);
