@@ -130,12 +130,15 @@ function drawFlash(img, sx,sy,sw,sh, bw,bh, a){
 }
 // per-fish ludo swim animations. add one [key,cols,rows,frames,rate] line per fish.
 const FISHANIM = {};
+const LAZY_ANIM = { megalodon:1, levia:1, whale:1 };   // heavy + rare sprites: fetch on first spawn, not at boot
 [['ray',5,5,25,0.00833],['darter',5,5,25,0.00833],['minnow',6,6,36,0.012],['angler',5,5,25,0.00833],['levia',5,5,25,0.00833],['shark',5,5,25,0.00833],['whale',5,5,25,0.00833],['golden',5,5,25,0.00833],['seacat',5,5,25,0.00833],['megalodon',5,5,25,0.006]].forEach(function(e){
-  const o={img:new Image(), cols:e[1], rows:e[2], frames:e[3], rate:e[4], ready:false};
+  const o={img:new Image(), cols:e[1], rows:e[2], frames:e[3], rate:e[4], ready:false, lazy:!!LAZY_ANIM[e[0]], key:e[0]};
   o.img.onload=function(){ o.ready=true; buildMask(e[0], o.img, e[1], e[2]); };
-  o.img.src=`assets/${e[0]}-anim.png?v=1`;
+  if (!o.lazy) o.img.src=`assets/${e[0]}-anim.png?v=1`;   // eager sprites load now; lazy ones wait for ensureAnim()
   FISHANIM[e[0]]=o;
 });
+// Kick off a lazy sprite's download the first time its fish is about to appear.
+function ensureAnim(key){ const o=FISHANIM[key]; if (o && o.lazy && !o.img.src) o.img.src=`assets/${key}-anim.png?v=1`; }
 
 function pickType(elapsedFrac){
   // late game biases toward richer targets
@@ -548,6 +551,7 @@ function tryFire(){
 function spawnFish(forceSchool){
   const frac = mode==='tournament' ? 1-(timeLeft/ROUND_TIME) : Math.min(elapsed/90,1);
   const key  = pickType(frac);
+  ensureAnim(key);                 // begin loading a lazy sprite the first time its fish spawns
   const t    = FISH_TYPES[key];
   const m = t.size*2.2, edge = (srand()*4)|0;
   let x,y;
@@ -732,6 +736,7 @@ function coinPop(){
 }
 
 function spawnMegalodon(){
+  ensureAnim('megalodon');         // safety: load the sprite even if reached without the warning
   const t = FISH_TYPES.megalodon;
   const sz = clamp(Math.min(W,H)*0.23, 190, 360);   // THE MEGALODON - huge & fearsome
   const fromLeft = srand()<0.5;
@@ -828,7 +833,7 @@ function updateAmbient(dt){
 // ── boot: splash + loading (waits for the real assets), then menu ──
 function assetFrac(){
   let total=0, done=0;
-  for (const k in FISHANIM){ total++; if (FISHANIM[k].ready) done++; }
+  for (const k in FISHANIM){ if (FISHANIM[k].lazy) continue; total++; if (FISHANIM[k].ready) done++; }   // lazy sprites don't gate the boot bar
   total++; if (sceneReady) done++;
   total++; if (cannonImg.complete && cannonImg.naturalWidth) done++;
   for (const k of TYPE_KEYS){ if (FISH_TYPES[k].spriteFrom) continue; total++; if (FISH_TYPES[k].sprite) done++; }
@@ -1045,7 +1050,7 @@ function update(dt){
   powerups = powerups.filter(pu => !pu._gone);
   // jackpot is now a rare per-spawn chance (handled in the spawn block above)
   megTimer -= dt;
-  if (megTimer <= 0){ megAlert = 1.6; megPending = true; megTimer = srange(80, 140); sfxAlert(); callout('⚠ MEGALODON INCOMING', 'danger'); }
+  if (megTimer <= 0){ megAlert = 1.6; megPending = true; megTimer = srange(80, 140); sfxAlert(); ensureAnim('megalodon'); callout('⚠ MEGALODON INCOMING', 'danger'); }   // preload the sprite during the 1.6s warning
   if (megAlert > 0){ megAlert -= dt; shake = Math.max(shake, 2.5); if (megAlert <= 0 && megPending){ megPending = false; spawnMegalodon(); } }
   if (freezeT>0) freezeT -= dt; if (doubleT>0) doubleT -= dt; if (multiT>0) multiT -= dt;
 
@@ -1328,7 +1333,7 @@ function drawBackground(time){
     ctx.fillStyle = ov; ctx.fillRect(0,0,W,H);
     // drifting caustic light — living water over the scene
     ctx.save(); ctx.globalCompositeOperation='lighter';
-    for (let i=0;i<6;i++){
+    for (let i=0;i<4;i++){          // 4 (was 6): fewer per-frame radial-gradient 'lighter' fills, near-identical look
       const cx2 = (((Math.sin(i*2.3)*0.5+0.5) + ts*0.015*(1+i*0.22)) % 1) * W;
       const cy2 = H*(0.16+0.13*i) + Math.sin(ts*0.55+i*1.3)*16;
       const rr = 150+i*34;
