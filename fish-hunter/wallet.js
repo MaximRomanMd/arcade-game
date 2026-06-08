@@ -40,7 +40,7 @@
     },
     async balance() { const r = await call('/wallet/balance'); return r.ok ? num(r) : NaN; },
     async startRound(stake) { const r = await call('/round/start', { method: 'POST', body: { stake } }); return r.ok ? { ok: true, roundId: r.roundId, seed: r.seed, balance: num(r) } : { ok: false, error: r.error || 'WAGER_FAILED' }; },
-    async settleRound(roundId, score) { const r = await call('/round/settle', { method: 'POST', body: { roundId, score } }); return r.ok ? { ok: true, payout: r.payout, balance: num(r) } : { ok: false, error: r.error || 'SETTLE_FAILED' }; },
+    async settleRound(roundId, score, inputs) { const r = await call('/round/settle', { method: 'POST', body: { roundId, score, inputs } }); return r.ok ? { ok: true, payout: r.payout, score: r.score, balance: num(r), verified: r.verified } : { ok: false, error: r.error || "SETTLE_FAILED" }; },
   };
   window.AbyssWallet = Wallet;
   if (MODE === 'api') Wallet.ready = Wallet.launch().catch((e) => { console.warn('[wallet] launch failed:', e.message); return NaN; });

@@ -65,21 +65,19 @@ function spawn(r, frac) {
   return { key, hp: t.hp, value: t.value, size: t.size, x, y, vx: dx / len * sp, vy: dy / len * sp };
 }
 
-// Replay (seed, inputs) → authoritative result. inputs[tick] = {x,y,f}:
-//   x,y = aim point in LOGICAL coords; f = 1 if firing this tick (else 0/absent).
-// Returns { score, kills, ticks }.
-export function replay(seed, inputs) {
+// Stateful stepper — the SINGLE source of truth. The client steps it live
+// (rendering S.fish/S.bullets, showing S.score); the server replays it. Same
+// code both sides ⇒ the player's score == the server's authoritative score.
+//   input per tick = { x, y, f } : aim point in LOGICAL coords, f=1 if firing.
+export function createSim(seed) {
   const r = rng(seed);
-  const fish = []; const bullets = [];
-  let score = 0, kills = 0, combo = 1, comboKills = 0, comboTimer = 0, cooldown = 0, spawnTimer = 0;
-  for (let i = 0; i < 5; i++) fish.push(spawn(r, 0));        // seed the board
-
-  const n = Math.min(TICKS, (inputs && inputs.length) || 0);
-  for (let tick = 0; tick < n; tick++) {
-    const frac = tick / TICKS;
-    const inp = inputs[tick] || {};
-
-    // spawn cadence ramps up over time (deterministic)
+  const S = { fish: [], bullets: [], score: 0, kills: 0, combo: 1, tick: 0, done: false };
+  let comboKills = 0, comboTimer = 0, cooldown = 0, spawnTimer = 0;
+  for (let i = 0; i < 5; i++) S.fish.push(spawn(r, 0));      // seed the board
+  S.step = (inp) => {
+    if (S.tick >= TICKS) { S.done = true; return S; }
+    const frac = S.tick / TICKS; inp = inp || {};
+    const { fish, bullets } = S;
     if (--spawnTimer <= 0) {
       fish.push(spawn(r, frac));
       if (r() < 0.4) fish.push(spawn(r, frac));
@@ -87,8 +85,6 @@ export function replay(seed, inputs) {
       if (spawnTimer < 4) spawnTimer = 4;
     }
     if (fish.length < 8) fish.push(spawn(r, frac));
-
-    // fire from input
     if (cooldown > 0) cooldown--;
     if (inp.f && cooldown <= 0) {
       const ax = +inp.x, ay = +inp.y;
@@ -98,12 +94,8 @@ export function replay(seed, inputs) {
         cooldown = SIM.FIRE_COOLDOWN_TICKS;
       }
     }
-
-    // move fish; cull off-board
     for (const f of fish) { f.x += f.vx * DT; f.y += f.vy * DT; }
     for (let j = fish.length - 1; j >= 0; j--) { const f = fish[j]; if (f.x < -160 || f.x > SIM.W + 160 || f.y < -160 || f.y > SIM.H + 160) fish.splice(j, 1); }
-
-    // move bullets; ellipse collision (geometric, deterministic)
     for (let bi = bullets.length - 1; bi >= 0; bi--) {
       const b = bullets[bi]; b.x += b.vx * DT; b.y += b.vy * DT;
       if (--b.life <= 0 || b.x < -20 || b.x > SIM.W + 20 || b.y < -20 || b.y > SIM.H + 20) { bullets.splice(bi, 1); continue; }
@@ -113,16 +105,27 @@ export function replay(seed, inputs) {
           f.hp -= SIM.BULLET_DMG;
           if (f.hp <= 0) {
             comboTimer = SIM.COMBO_WINDOW_TICKS; comboKills++;
-            combo = Math.max(1, Math.min(8, 1 + Math.floor(comboKills / 2)));
-            score += Math.round(f.value * combo); kills++;
+            S.combo = Math.max(1, Math.min(8, 1 + Math.floor(comboKills / 2)));
+            S.score += Math.round(f.value * S.combo); S.kills++;
             fish.splice(fj, 1);
           }
           bullets.splice(bi, 1); break;
         }
       }
     }
+    if (comboTimer > 0 && --comboTimer <= 0) { S.combo = 1; comboKills = 0; }
+    S.tick++;
+    if (S.tick >= TICKS) S.done = true;
+    return S;
+  };
+  return S;
+}
 
-    if (comboTimer > 0 && --comboTimer <= 0) { combo = 1; comboKills = 0; }
-  }
-  return { score, kills, ticks: n };
+// Replay (seed, inputs) → authoritative result. Built on createSim, so it is
+// byte-identical to what the client computed live.
+export function replay(seed, inputs) {
+  const s = createSim(seed);
+  const n = Math.min(TICKS, (inputs && inputs.length) || 0);
+  for (let t = 0; t < n; t++) s.step(inputs[t]);
+  return { score: s.score, kills: s.kills, ticks: n };
 }

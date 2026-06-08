@@ -1015,9 +1015,15 @@ function renderRooms(){
         // Seamless wallet: the backend debits the stake + picks the board (seed).
         AbyssWallet.startRound(entry).then(r => {
           if (!r.ok){ alert(r.error==='INSUFFICIENT_FUNDS' ? 'Balance too low for this room (needs $'+entry.toFixed(2)+').' : 'Could not start the round. Try again.'); return; }
-          apiRound = r.roundId; apiSeed = r.seed; roomEntry = entry; roomPrize = 0;
+          apiRound = r.roundId; roomEntry = entry; roomPrize = 0;
           wallet = r.balance; saveWallet();
-          enter();
+          const os = document.getElementById('overlay-start'); if (os) os.classList.add('hidden');
+          if (window.startTournament){
+            // deterministic, server-replayable tournament round
+            window.startTournament(r.seed, { roundId: r.roundId, onEnd: (score, inputs) => {
+              AbyssWallet.settleRound(r.roundId, score, inputs).then(res => window.abyssToLobby(res));
+            }});
+          } else { apiSeed = r.seed; enter(); }   // fallback to casual seating
         });
         return;
       }
@@ -2014,6 +2020,7 @@ function updateQuality(realDt){
 // ── loop ─────────────────────────────────────────────────────────
 let last = performance.now();
 function loop(now){
+  if (window.__tournamentActive){ last = now; requestAnimationFrame(loop); return; }   // sim-core tournament owns the canvas
   const realDt = (now - last) / 1000;
   const dt = Math.min(realDt, 0.05);
   last = now;
@@ -2030,6 +2037,14 @@ function loop(now){
   }
   requestAnimationFrame(loop);
 }
+// Return to the lobby after a tournament round settles (called by tournament.js).
+window.abyssToLobby = function(res){
+  window.__tournamentActive = false; apiRound = null;
+  if (res && res.balance != null){ wallet = res.balance; saveWallet(); }
+  const m = document.getElementById('soon-msg');
+  if (m && res){ m.textContent = (res.payout > 0) ? ('WON +$' + Number(res.payout).toFixed(2)) : 'No payout this round'; m.classList.add('show'); setTimeout(()=>m.classList.remove('show'), 3200); }
+  exitToMenu();
+};
 seedAmbient();
 requestAnimationFrame(loop);
 
