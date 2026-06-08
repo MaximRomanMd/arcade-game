@@ -614,7 +614,21 @@ body.playing #xp-hud{display:none;}
 .hud-center .combo-block{margin-left:0 !important;}      /* was right-pushed in the old flat bar */
 .combo-meter{width:100%;height:3px;margin-top:5px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden;}
 .combo-fill{height:100%;width:0;border-radius:2px;background:linear-gradient(90deg,var(--teal),var(--gold));box-shadow:0 0 8px rgba(40,224,200,.6);transition:width .08s linear;}
-@media (max-width:560px){ .hud-left,.hud-right{flex:0 0 auto;} .score-block .hud-value{font-size:22px;} }
+/* phones: compact the 3-zone HUD so credits + EXIT never overflow off-screen */
+@media (max-width:560px){
+  #hud{gap:5px;padding:8px;}
+  .hud-zone{gap:5px;}
+  .hud-left,.hud-right{flex:0 0 auto;}
+  .hud-center{gap:6px;}
+  .hud-left #back-btn{display:none;}              /* EXIT returns to the lobby, which has PORTAL */
+  .hud-block{min-width:0;padding:4px 7px;}
+  .score-block{min-width:0;}
+  .score-block .hud-value{font-size:20px;}
+  .hud-value{font-size:15px;}
+  .hud-label{font-size:8px;letter-spacing:1px;}
+  #wallet-hud{display:none;}                      /* credits hidden on the tiny in-play bar; end screen reports winnings */
+  #exit-btn{padding:6px 11px;font-size:11px;}
+}
 
 /* ── center-screen event callout (boss · big catch · combo milestones) ── */
 #callout{position:fixed;left:50%;top:30%;z-index:6;pointer-events:none;white-space:nowrap;text-align:center;
