@@ -8,6 +8,32 @@
    (an Image) and the renderer will use it instead of the vector body.
    ════════════════════════════════════════════════════════════════ */
 
+// ── top-level error handling ────────────────────────────────────
+// One uncaught error must never white-screen the game: log it, surface a brief
+// non-blocking notice, and (for the render loop) keep running.
+let _lastErrToast = -1e9;
+function reportError(err, where){
+  try { console.error('[ABYSS]' + (where ? ' ' + where : '') + ':', err); } catch (_){}
+  var t = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  if (t - _lastErrToast < 5000) return;          // throttle visible notices
+  _lastErrToast = t;
+  try {
+    var el = document.getElementById('err-toast');
+    if (!el){ el = document.createElement('div'); el.id = 'err-toast'; document.body.appendChild(el); }
+    el.textContent = '⚠ A hiccup occurred — the game kept running.';
+    el.className = 'show';
+    clearTimeout(reportError._t);
+    reportError._t = setTimeout(function(){ el.className = ''; }, 4000);
+  } catch (_){}
+}
+if (typeof window !== 'undefined'){
+  window.addEventListener('error', function(e){
+    if (e && e.target && e.target !== window && e.target.tagName) return;  // ignore benign resource-load errors
+    reportError((e && (e.error || e.message)) || 'error', 'window');
+  });
+  window.addEventListener('unhandledrejection', function(e){ reportError(e && e.reason, 'promise'); });
+}
+
 // ── canvas / context ────────────────────────────────────────────
 const canvas = document.getElementById('game');
 const ctx    = canvas.getContext('2d');
@@ -1899,12 +1925,16 @@ let last = performance.now();
 function loop(now){
   const dt = Math.min((now-last)/1000, 0.05);
   last = now;
-  if (phase === 'boot')        updateBoot(dt);
-  else if (phase === 'dive')   updateDive(dt);
-  else if (phase === 'playing' && running){ if (hitStop > 0) hitStop -= dt; else update(dt); }
-  else                         updateAmbient(dt);   // menu / over
-  updateFx(dt);
-  render(now);
+  try {
+    if (phase === 'boot')        updateBoot(dt);
+    else if (phase === 'dive')   updateDive(dt);
+    else if (phase === 'playing' && running){ if (hitStop > 0) hitStop -= dt; else update(dt); }
+    else                         updateAmbient(dt);   // menu / over
+    updateFx(dt);
+    render(now);
+  } catch (err) {
+    reportError(err, 'frame');                        // never let one bad frame kill the loop
+  }
   requestAnimationFrame(loop);
 }
 seedAmbient();
@@ -1956,7 +1986,7 @@ function endGame(){
   lsS(K.games, ls(K.games)+1);
   lsS(K.coins, ls(K.coins)+stats.coins);
   if (stats.bestCombo > ls(K.bigCombo)) lsS(K.bigCombo, stats.bestCombo);
-  if (mode==='tournament') saveLeaderboard(score);
+  if (mode==='tournament' || mode==='multi') saveLeaderboard(score);   // room play now records on the weekly leaderboard (tournament entry was removed in the lobby redesign)
   const _mxp = Math.round(score/500) + Math.floor(stats.kills/2);
   xpAdd(_mxp); questProgress('play', 1);
 

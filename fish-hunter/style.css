@@ -658,3 +658,10 @@ body.playing #xp-hud{display:none;}
 .big-btn:hover,.mode-btn:hover{box-shadow:0 10px 30px rgba(40,224,200,.42);}
 @keyframes bioPulse{0%,100%{box-shadow:0 8px 26px rgba(40,224,200,.4);}50%{box-shadow:0 8px 34px rgba(40,224,200,.6);}}
 .big-btn{animation:bioPulse 3.4s ease-in-out infinite;}
+
+/* ── top-level error toast (non-blocking) ── */
+#err-toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(20px);z-index:60;
+  pointer-events:none;opacity:0;transition:opacity .25s,transform .25s;
+  background:rgba(255,93,108,.16);border:1px solid rgba(255,93,108,.5);color:#ffd9de;
+  font:700 12.5px var(--font);letter-spacing:.5px;padding:9px 16px;border-radius:11px;backdrop-filter:blur(6px);max-width:90vw;text-align:center;}
+#err-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
