@@ -1131,7 +1131,7 @@ function openGame(game) {
         blob:   '/blob/',
         bingo:  '/bingo/',
         tower:  '/tower/',
-        fish:   '/fish/',
+        fish:   '/abyss/',
     };
     if (urls[game]) window.location.href = urls[game];
 }

@@ -527,3 +527,120 @@ body.playing #xp-hud{display:none;}
 .room-prize{font-size:12.5px !important;}
 .room-right{gap:3px !important;margin-top:0 !important;}
 .room-join{padding:5px 0 !important;font-size:12.5px !important;}
+
+/* ════════════════════════════════════════════════
+   LOBBY REDESIGN — top bar · featured banner · table grid + side rail
+   (overrides the earlier compact-pass rules above)
+   ════════════════════════════════════════════════ */
+
+/* frosted deep-sea backdrop: scene still moves behind, but text stays readable */
+.overlay.lobby2{background:linear-gradient(180deg,rgba(3,12,20,.62),rgba(3,12,20,.34) 50%,rgba(3,12,20,.55)) !important;backdrop-filter:blur(3px) !important;align-items:flex-start !important;}
+.lobby2-inner{max-width:1180px !important;width:96vw !important;gap:10px !important;padding-top:10px !important;}
+
+/* ── persistent top bar ── */
+.lobby-bar{pointer-events:auto;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:7px 12px;border-radius:14px;background:linear-gradient(180deg,rgba(8,30,46,.66),rgba(4,18,31,.5));
+  border:1px solid var(--glass-line);backdrop-filter:blur(7px);}
+.lobby-brand{display:flex;align-items:center;min-width:0;}
+.lobby-bar .menu-logo-img2{display:block !important;max-width:min(34vw,150px) !important;margin:0 !important;filter:drop-shadow(0 4px 14px rgba(40,224,200,.45));}
+.lobby-bar .lobby2-logotext{font-size:clamp(18px,3vw,26px) !important;text-shadow:0 0 26px rgba(40,224,200,.45);}
+.lobby-bar-right{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+.stat-pill{display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:11px;font:800 14px var(--font);
+  background:rgba(0,0,0,.34);border:1px solid var(--glass-line);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.stat-pill.bal{color:var(--gold);border-color:rgba(255,206,99,.45);}
+.stat-pill.xp{color:#cdaaff;border-color:rgba(176,123,255,.5);}
+.stat-pill .xp-ico{font-size:13px;}
+.lobby-bar .pill-btn{display:flex;align-items:center;text-decoration:none;cursor:pointer;padding:8px 14px;border-radius:11px;
+  font:800 12px var(--font);letter-spacing:1px;color:var(--ink-dim);background:var(--glass);border:1px solid var(--glass-line);transition:.16s;}
+.lobby-bar .pill-btn:hover{color:var(--teal);border-color:var(--teal);}
+
+/* ── featured tournament banner ── */
+.lobby-banner{pointer-events:auto;width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:11px 18px;border-radius:14px;position:relative;overflow:hidden;
+  background:linear-gradient(110deg,rgba(19,126,117,.34),rgba(8,30,46,.40) 58%,rgba(255,206,99,.12));
+  border:1px solid rgba(40,224,200,.32);}
+.banner-main{text-align:left;min-width:0;}
+.banner-kicker{font:800 10px var(--font);letter-spacing:2px;color:var(--gold);}
+.banner-title{font:900 clamp(15px,2.4vw,21px) var(--font);color:#eaffff;letter-spacing:.4px;margin-top:2px;}
+.banner-sub{font:700 11px var(--font);color:var(--ink-dim);margin-top:3px;}
+.banner-cta{flex:0 0 auto;cursor:pointer;border:none;border-radius:12px;padding:12px 22px;font:900 14px var(--font);
+  letter-spacing:1px;color:#03161a;background:linear-gradient(135deg,var(--teal),#7ff0dd);box-shadow:0 6px 20px rgba(40,224,200,.4);transition:.16s;}
+.banner-cta:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(40,224,200,.55);}
+
+/* ── main split: table grid + side rail ── */
+.lobby-main{width:100%;display:flex;gap:14px;align-items:stretch;}
+.lobby-main #rooms-list{flex:1 1 auto;min-width:0;align-content:start;max-height:62vh !important;overflow-y:auto !important;}
+.lobby-side{flex:0 0 248px;display:flex;flex-direction:column;gap:8px;
+  background:var(--glass);border:1px solid var(--glass-line);border-radius:16px;padding:13px;backdrop-filter:blur(6px);}
+.lobby-side .panel-title{margin:0;}
+.lobby-side .weekly-lb{flex:1 1 auto;max-height:40vh;}
+.lobby-side .how-to{margin-top:6px;border-top:1px solid var(--glass-line);padding-top:8px;}
+
+/* ── room cards: stakes-tier badge + seat-fill bar ── */
+.tier-badge{display:inline-block;vertical-align:middle;font:800 8.5px var(--font);letter-spacing:.5px;
+  padding:1px 6px;border-radius:6px;margin-left:4px;color:#03161a;background:var(--teal);}
+.tier-0 .tier-badge{background:#7fd4ff;}
+.tier-1 .tier-badge{background:#28e0c8;}
+.tier-2 .tier-badge{background:#7ff0dd;}
+.tier-3 .tier-badge{background:var(--gold);}
+.tier-4 .tier-badge{background:#ff9d4d;color:#fff;}
+.room-card.tier-3{border-color:rgba(255,206,99,.5) !important;}
+.room-card.tier-4{border-color:rgba(255,157,77,.55) !important;}
+.seat-bar{width:100%;height:4px;border-radius:3px;background:rgba(255,255,255,.10);overflow:hidden;margin:3px 0 1px;}
+.seat-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--teal),#7ff0dd);}
+
+/* ── responsive: stack side rail under the grid on narrow screens ── */
+@media (max-width:820px){
+  .lobby-main{flex-direction:column;}
+  .lobby-side{flex:1 1 auto;width:100%;}
+  .lobby-side .weekly-lb{max-height:200px;}
+  .lobby-main #rooms-list{max-height:none !important;}
+  .lobby-bar{flex-wrap:wrap;justify-content:center;}
+}
+
+/* ════════════════════════════════════════════════
+   IN-GAME HUD DECLUTTER · EVENT CALLOUTS · VISUAL SYSTEM
+   ════════════════════════════════════════════════ */
+
+/* ── HUD: three balanced zones, SCORE as the hero ── */
+#hud{justify-content:space-between;gap:8px;}
+.hud-zone{display:flex;align-items:center;gap:8px;pointer-events:none;}
+.hud-zone>*{pointer-events:auto;}
+.hud-left{flex:1 1 0;justify-content:flex-start;}
+.hud-center{flex:0 0 auto;justify-content:center;gap:10px;}
+.hud-right{flex:1 1 0;justify-content:flex-end;}
+.score-block{min-width:104px;}
+.score-block .hud-value{font-size:30px;color:#fff;text-shadow:0 0 20px rgba(40,224,200,.6);}
+.hud-center .combo-block{margin-left:0 !important;}      /* was right-pushed in the old flat bar */
+.combo-meter{width:100%;height:3px;margin-top:5px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden;}
+.combo-fill{height:100%;width:0;border-radius:2px;background:linear-gradient(90deg,var(--teal),var(--gold));box-shadow:0 0 8px rgba(40,224,200,.6);transition:width .08s linear;}
+@media (max-width:560px){ .hud-left,.hud-right{flex:0 0 auto;} .score-block .hud-value{font-size:22px;} }
+
+/* ── center-screen event callout (boss · big catch · combo milestones) ── */
+#callout{position:fixed;left:50%;top:30%;z-index:6;pointer-events:none;white-space:nowrap;text-align:center;
+  font:900 clamp(26px,5.2vw,54px) var(--font);letter-spacing:2px;opacity:0;color:#eaffff;
+  transform:translate(-50%,-50%) scale(.5);text-shadow:0 0 22px rgba(40,224,200,.7),0 3px 14px rgba(0,0,0,.85);}
+#callout.gold{color:var(--gold);text-shadow:0 0 26px rgba(255,206,99,.85),0 3px 14px rgba(0,0,0,.85);}
+#callout.danger{color:#ff6a78;text-shadow:0 0 26px rgba(255,93,108,.85),0 3px 14px rgba(0,0,0,.9);}
+#callout.teal{color:var(--teal);text-shadow:0 0 24px rgba(40,224,200,.8),0 3px 14px rgba(0,0,0,.85);}
+#callout.show{animation:calloutPop 1.5s cubic-bezier(.18,.8,.2,1) forwards;}
+@keyframes calloutPop{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.5);}
+  13%{opacity:1;transform:translate(-50%,-50%) scale(1.14);}
+  26%{transform:translate(-50%,-50%) scale(1);}
+  70%{opacity:1;transform:translate(-50%,-54%) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-72%) scale(.95);}
+}
+
+/* ── visual system: cohesive deep-sea overlays + bioluminescent accents ── */
+.ov-card{
+  background:linear-gradient(180deg,rgba(9,30,46,.93),rgba(4,16,28,.95)) !important;
+  border:1px solid var(--glass-line) !important;
+  box-shadow:0 26px 80px rgba(0,0,0,.62),0 0 60px rgba(40,224,200,.10),inset 0 1px 0 rgba(174,249,236,.07) !important;
+  backdrop-filter:blur(11px) !important;
+}
+.ov-result{color:var(--teal) !important;text-shadow:0 0 18px rgba(40,224,200,.45);}
+.mode-btn{transition:.16s;}
+.big-btn:hover,.mode-btn:hover{box-shadow:0 10px 30px rgba(40,224,200,.42);}
+@keyframes bioPulse{0%,100%{box-shadow:0 8px 26px rgba(40,224,200,.4);}50%{box-shadow:0 8px 34px rgba(40,224,200,.6);}}
+.big-btn{animation:bioPulse 3.4s ease-in-out infinite;}

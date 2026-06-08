@@ -545,7 +545,7 @@ function addKillCombo(){
   comboKills++;
   const _oldCombo = combo;
   combo = clamp(1 + Math.floor(comboKills/2), 1, 8);
-  if (combo > _oldCombo) sfxCombo(combo);
+  if (combo > _oldCombo){ sfxCombo(combo); if (combo >= 4) callout('COMBO ×'+combo, 'teal'); }
   stats.bestCombo = Math.max(stats.bestCombo, combo);
   const cb = document.getElementById('combo-block');
   cb.classList.add('live');
@@ -560,6 +560,16 @@ function decayCombo(dt){
       document.getElementById('combo-block').classList.remove('live');
     }
   }
+  { const cf = document.getElementById('combo-fill'); if (cf) cf.style.width = (Math.max(0, comboTimer) / COMBO_WINDOW * 100) + '%'; }
+}
+
+// ── center-screen callout banner: boss / big-catch / combo milestones ──
+function callout(txt, kind){
+  const el = document.getElementById('callout'); if (!el) return;
+  el.textContent = txt;
+  el.className = 'callout ' + (kind || '');
+  void el.offsetWidth;            // reflow so the CSS animation restarts on every call
+  el.classList.add('show');
 }
 
 // ── kill / hit fx ────────────────────────────────────────────────
@@ -583,6 +593,9 @@ function killFish(f){
     stats.kills++; stats.coins += f.coins; questProgress('catch',1);
     if (f.value > stats.biggestVal){ stats.biggestVal = f.value; stats.biggest = labelFor(f.key); }
     addKillCombo();
+    if (f.jackpot)                      callout('💰 JACKPOT  +'+gained, 'gold');
+    else if (f.boss)                    callout((f.key==='megalodon'?'MEGALODON DOWN':'BOSS DOWN')+'  +'+gained, 'gold');
+    else if (f.shiny || f.value >= 160) callout('BIG CATCH  +'+gained, 'gold');
   }
   sfxKill(f.boss || f.shiny); sfxCoin();
 
@@ -866,16 +879,19 @@ function renderRooms(){
   const _bv=document.getElementById('bal-val'); if(_bv) _bv.textContent=formatNum(wallet);
   const _wb2=document.getElementById('lobby-wallet2'); if(_wb2) _wb2.textContent=formatNum(wallet);
   const prices=[0.5,1,5,10,50];
+  const tiers=['MICRO','LOW','MID','HIGH','VIP'];      // stakes tier label per price index
   const fmts=[{k:'1v1',name:'1v1 DUEL',seats:2},{k:'6p',name:'6 PLAYERS',seats:6},{k:'8p',name:'8 PLAYERS',seats:8}];
   let html='';
   fmts.forEach(f=>{                                   // grouped & ordered: 1v1, then 6p, then 8p
     html+='<div class="rooms-section">'+f.name+'</div>';
     prices.forEach((pr,pi)=>{
       const net=pr*f.seats*0.90, top=net, filled=(pi+(f.k==='1v1'?1:2))%f.seats;
-      html+='<div class="room-card" data-fmt="'+f.k+'" data-entry="'+pr+'" data-prize="'+top.toFixed(2)+'">'
+      const pct=Math.round(filled/f.seats*100);
+      html+='<div class="room-card tier-'+pi+'" data-fmt="'+f.k+'" data-entry="'+pr+'" data-prize="'+top.toFixed(2)+'">'
         +'<div class="room-logo"><img src="assets/logo.png?v=1" alt=""></div>'
-        +'<div class="room-mid"><div class="room-name">'+f.name+'</div>'
+        +'<div class="room-mid"><div class="room-name">'+f.name+' <span class="tier-badge">'+tiers[pi]+'</span></div>'
         +'<div class="room-meta">$'+pr.toFixed(2)+' entry &middot; 90s &middot; seeded</div>'
+        +'<div class="seat-bar"><div class="seat-fill" style="width:'+pct+'%"></div></div>'
         +'<div class="room-players">'+filled+'/'+f.seats+' seated</div></div>'
         +'<div class="room-right"><div class="room-prize">WIN $'+top.toFixed(2)+'</div>'
         +'<button class="room-join">JOIN</button></div></div>';
@@ -909,6 +925,7 @@ function renderMenu(){
   { const _ll=document.getElementById('lobby-landing'), _rv=document.getElementById('rooms-view'); if(_ll)_ll.classList.add('hidden'); if(_rv)_rv.classList.remove('hidden'); }
   { const _bv=document.getElementById('bal-val'); if(_bv) _bv.textContent=formatNum(wallet); }
   grantDailyLogin(); updateXpHud();
+  { const _lx=document.getElementById('lobby-xp'); if(_lx) _lx.textContent=formatNum(xpGet()); }
   if (logoImg.complete && logoImg.naturalWidth > 0){
     const li = document.getElementById('menu-logo-img');
     const lt = document.getElementById('menu-logo-text');
@@ -996,7 +1013,7 @@ function update(dt){
   powerups = powerups.filter(pu => !pu._gone);
   // jackpot is now a rare per-spawn chance (handled in the spawn block above)
   megTimer -= dt;
-  if (megTimer <= 0){ megAlert = 1.6; megPending = true; megTimer = srange(80, 140); sfxAlert(); }
+  if (megTimer <= 0){ megAlert = 1.6; megPending = true; megTimer = srange(80, 140); sfxAlert(); callout('⚠ MEGALODON INCOMING', 'danger'); }
   if (megAlert > 0){ megAlert -= dt; shake = Math.max(shake, 2.5); if (megAlert <= 0 && megPending){ megPending = false; spawnMegalodon(); } }
   if (freezeT>0) freezeT -= dt; if (doubleT>0) doubleT -= dt; if (multiT>0) multiT -= dt;
 
