@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#04111f">
+<title>ABYSS HUNTER — Deep-Sea Skill Arcade</title>
+<meta name="description" content="ABYSS HUNTER — a deep-sea skill arcade. Dive in, out-hunt the table, climb the weekly leaderboard. Top 3 win the pot.">
+<meta property="og:title" content="ABYSS HUNTER — Deep-Sea Skill Arcade">
+<meta property="og:description" content="Dive the abyss. Out-hunt the table. Top 3 win the pot.">
+<meta property="og:image" content="/assets/logo.png">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/png" href="/assets/logo.png">
+<style>
+  :root{
+    --bg-0:#02080f; --bg-1:#04121f; --bg-2:#082236;
+    --teal:#28e0c8; --teal-soft:#7ff0dd; --gold:#ffce63;
+    --ink:#cfe9ef; --ink-dim:#6f93a0;
+    --glass:rgba(8,30,46,.62); --glass-line:rgba(70,200,210,.22);
+    --font:'Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{scroll-behavior:smooth;}
+  body{font-family:var(--font);color:var(--ink);background:var(--bg-0);overflow-x:hidden;}
+
+  /* animated deep-sea backdrop */
+  .sea{position:fixed;inset:0;z-index:-2;
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(40,224,200,.16), transparent 55%),
+      linear-gradient(180deg, #06324a 0%, #052438 32%, #03182a 64%, #02080f 100%);}
+  .rays{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+    background:repeating-linear-gradient(105deg, rgba(174,249,236,.06) 0 2px, transparent 2px 60px);
+    mix-blend-mode:screen;animation:drift 22s linear infinite;}
+  @keyframes drift{to{background-position:600px 0;}}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px;}
+
+  /* ── nav ── */
+  nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;
+    padding:12px 22px;backdrop-filter:blur(8px);background:linear-gradient(180deg,rgba(2,8,15,.7),rgba(2,8,15,0));}
+  nav .brand{font-weight:900;letter-spacing:2px;color:#eafffb;font-size:15px;}
+  nav .brand b{color:var(--teal);}
+  nav a.play{text-decoration:none;font-weight:900;letter-spacing:1px;font-size:13px;color:#03161a;
+    background:linear-gradient(135deg,var(--teal),var(--teal-soft));padding:9px 18px;border-radius:11px;
+    box-shadow:0 6px 18px rgba(40,224,200,.4);transition:.16s;}
+  nav a.play:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(40,224,200,.55);}
+
+  /* ── hero ── */
+  .hero{text-align:center;padding:42px 20px 60px;position:relative;}
+  .hero img.logo{width:min(80vw,560px);filter:drop-shadow(0 12px 50px rgba(40,224,200,.45));}
+  .hero .tag{margin-top:14px;font-size:clamp(12px,2.6vw,17px);letter-spacing:8px;color:var(--teal);font-weight:700;}
+  .hero p.lead{margin:20px auto 0;max-width:540px;color:var(--ink);font-size:clamp(15px,2.4vw,18px);line-height:1.55;opacity:.92;}
+  .cta{display:inline-flex;align-items:center;gap:10px;margin-top:30px;text-decoration:none;
+    font-size:20px;font-weight:900;letter-spacing:3px;color:#03161a;
+    background:linear-gradient(135deg,var(--teal),var(--teal-soft));padding:18px 42px;border-radius:16px;
+    box-shadow:0 12px 40px rgba(40,224,200,.5);transition:.16s;animation:pulse 2.8s ease-in-out infinite;}
+  .cta:hover{transform:translateY(-3px);box-shadow:0 16px 50px rgba(40,224,200,.65);}
+  @keyframes pulse{0%,100%{box-shadow:0 12px 40px rgba(40,224,200,.5);}50%{box-shadow:0 12px 52px rgba(40,224,200,.72);}}
+  .hero .sub-note{margin-top:14px;font-size:12px;color:var(--ink-dim);letter-spacing:1px;}
+
+  /* ── prize strip ── */
+  .prize{margin:0 auto 56px;max-width:760px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
+    text-align:center;padding:16px 22px;border-radius:16px;
+    background:linear-gradient(110deg,rgba(19,126,117,.34),rgba(8,30,46,.4) 60%,rgba(255,206,99,.14));
+    border:1px solid rgba(40,224,200,.3);}
+  .prize .k{font-weight:900;letter-spacing:2px;color:var(--gold);font-size:13px;}
+  .prize .v{font-weight:900;font-size:clamp(16px,2.6vw,22px);color:#eafffb;letter-spacing:.5px;}
+
+  /* ── sections ── */
+  section{padding:30px 0 50px;}
+  h2{text-align:center;font-size:clamp(20px,3.4vw,30px);font-weight:900;letter-spacing:1px;color:#eafffb;margin-bottom:8px;}
+  h2 span{color:var(--teal);}
+  .sub{text-align:center;color:var(--ink-dim);font-size:14px;margin-bottom:26px;}
+
+  /* how it works */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .step{background:var(--glass);border:1px solid var(--glass-line);border-radius:16px;padding:20px 16px;text-align:center;backdrop-filter:blur(6px);transition:.16s;}
+  .step:hover{transform:translateY(-3px);border-color:var(--teal);}
+  .step .ico{font-size:30px;}
+  .step .t{margin-top:10px;font-weight:900;letter-spacing:1.5px;color:var(--teal);font-size:14px;}
+  .step .d{margin-top:6px;font-size:13px;color:var(--ink);line-height:1.45;opacity:.9;}
+
+  /* fish showcase */
+  .fish-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;}
+  .fish{background:var(--glass);border:1px solid var(--glass-line);border-radius:14px;padding:14px 8px;text-align:center;transition:.16s;}
+  .fish:hover{transform:translateY(-4px);border-color:var(--teal);box-shadow:0 10px 30px rgba(40,224,200,.18);}
+  .fish img{width:100%;height:64px;object-fit:contain;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5));animation:bob 4s ease-in-out infinite;}
+  .fish:nth-child(odd) img{animation-delay:-2s;}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+  .fish .n{margin-top:8px;font-weight:800;font-size:12px;color:#eafffb;letter-spacing:.5px;}
+  .fish .p{font-size:11px;color:var(--gold);font-weight:800;}
+
+  /* leaderboard */
+  .lb{max-width:520px;margin:0 auto;background:var(--glass);border:1px solid var(--glass-line);border-radius:18px;padding:8px;backdrop-filter:blur(6px);}
+  .lb-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:11px;}
+  .lb-row+.lb-row{border-top:1px solid rgba(70,200,210,.1);}
+  .lb-row .rk{min-width:26px;text-align:center;font-weight:900;color:var(--ink-dim);}
+  .lb-row:nth-child(1) .rk{color:var(--gold);}
+  .lb-row:nth-child(2) .rk{color:#cfe0e8;}
+  .lb-row:nth-child(3) .rk{color:#e8a06a;}
+  .lb-row .nm{flex:1;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lb-row .sc{font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums;}
+  .lb-empty{text-align:center;color:var(--ink-dim);padding:26px 10px;font-size:14px;}
+
+  footer{text-align:center;padding:50px 20px 60px;border-top:1px solid var(--glass-line);margin-top:30px;}
+  footer .note{color:var(--ink-dim);font-size:12px;margin-top:18px;line-height:1.6;max-width:520px;margin-left:auto;margin-right:auto;}
+
+  @media (max-width:760px){
+    .steps{grid-template-columns:repeat(2,1fr);}
+    .fish-row{grid-template-columns:repeat(3,1fr);}
+  }
+  @media (max-width:420px){ .fish-row{grid-template-columns:repeat(2,1fr);} }
+</style>
+</head>
+<body>
+<div class="sea"></div>
+<div class="rays"></div>
+
+<nav>
+  <div class="brand">ABYSS <b>HUNTER</b></div>
+  <a class="play" href="/play/">PLAY ›</a>
+</nav>
+
+<!-- ── HERO ── -->
+<header class="hero">
+  <img class="logo" src="/assets/logo.png" alt="ABYSS HUNTER">
+  <div class="tag">DEEP-SEA SKILL ARCADE</div>
+  <p class="lead">Aim, fire, and out-hunt the table on a shared seeded board. Chain combos, land the big catches, and climb the weekly leaderboard.</p>
+  <a class="cta" href="/play/">PLAY NOW</a>
+  <div class="sub-note">No download · plays in your browser · 90-second rounds</div>
+</header>
+
+<div class="wrap">
+  <!-- ── PRIZE STRIP ── -->
+  <div class="prize">
+    <span class="k">⚔ WEEKLY TOURNAMENT</span>
+    <span class="v">TOP 3 HUNTERS WIN THE POT</span>
+  </div>
+
+  <!-- ── HOW IT WORKS ── -->
+  <section id="how">
+    <h2>How it <span>works</span></h2>
+    <div class="sub">Everyone hunts the same seeded board — pure skill, highest score wins.</div>
+    <div class="steps">
+      <div class="step"><div class="ico">🎯</div><div class="t">AIM</div><div class="d">Move your pointer — the cannon tracks it.</div></div>
+      <div class="step"><div class="ico">🔫</div><div class="t">FIRE</div><div class="d">Tap and hold to shoot. Bigger fish, bigger payouts.</div></div>
+      <div class="step"><div class="ico">⚡</div><div class="t">COMBO</div><div class="d">Chain catches to multiply your score — shoot the glowing orbs for power-ups.</div></div>
+      <div class="step"><div class="ico">🏆</div><div class="t">WIN</div><div class="d">Highest score before the clock runs out takes the pot.</div></div>
+    </div>
+  </section>
+
+  <!-- ── FISH SHOWCASE ── -->
+  <section id="fish">
+    <h2>Know your <span>catch</span></h2>
+    <div class="sub">From skittish minnows to the deep-dwelling bosses.</div>
+    <div class="fish-row">
+      <div class="fish"><img src="/assets/fish-minnow.png" alt="Minnow"><div class="n">MINNOW</div><div class="p">5 pts</div></div>
+      <div class="fish"><img src="/assets/fish-ray.png" alt="Ray"><div class="n">RAY</div><div class="p">30 pts</div></div>
+      <div class="fish"><img src="/assets/fish-angler.png" alt="Angler"><div class="n">ANGLER</div><div class="p">70 pts</div></div>
+      <div class="fish"><img src="/assets/fish-golden.png" alt="Golden Koi"><div class="n">GOLDEN</div><div class="p">160 pts</div></div>
+      <div class="fish"><img src="/assets/fish-shark.png" alt="Shark"><div class="n">SHARK</div><div class="p">230 pts</div></div>
+      <div class="fish"><img src="/assets/fish-megalodon.png" alt="Megalodon"><div class="n">MEGALODON</div><div class="p">3500 pts</div></div>
+    </div>
+  </section>
+
+  <!-- ── LEADERBOARD ── -->
+  <section id="leaderboard">
+    <h2>Weekly <span>leaderboard</span></h2>
+    <div class="sub">Best scores this week — reset every 7 days.</div>
+    <div class="lb" id="lb"></div>
+  </section>
+</div>
+
+<footer>
+  <a class="cta" href="/play/">DIVE IN ›</a>
+  <div class="note">ABYSS HUNTER is a play-money skill arcade. Scores are kept on your device.</div>
+</footer>
+
+<script>
+  // Weekly leaderboard — reads the same store the game writes (fishhunter_lb_weekly).
+  (function(){
+    var weekId = Math.floor(Date.now()/(7*86400000));
+    function fmt(n){ return (n||0).toLocaleString('en-US'); }
+    var rows = [];
+    try { rows = JSON.parse(localStorage.getItem('fishhunter_lb_weekly') || '[]'); } catch(e){ rows = []; }
+    rows = (rows||[]).filter(function(e){ return e && e.wk === weekId; }).sort(function(a,b){ return b.score-a.score; }).slice(0,8);
+    var me = localStorage.getItem('portal_nickname') || '';
+    var el = document.getElementById('lb');
+    if (!rows.length){ el.innerHTML = '<div class="lb-empty">No scores yet this week — be the first to dive in!</div>'; return; }
+    el.innerHTML = rows.map(function(r,i){
+      var mine = me && r.name === me ? ' style="background:rgba(40,224,200,.12)"' : '';
+      return '<div class="lb-row"'+mine+'><span class="rk">'+(i+1)+'</span><span class="nm">'+
+        String(r.name||'Hunter').replace(/[<>]/g,'')+'</span><span class="sc">'+fmt(r.score)+'</span></div>';
+    }).join('');
+  })();
+</script>
+</body>
+</html>
