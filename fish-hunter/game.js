@@ -223,7 +223,7 @@ const PU_KEYS = ['freeze'];
 let stats = { shots:0, hits:0, kills:0, bestCombo:1, biggest:'—', biggestVal:0, coins:0 };
 const cannon = { x: W/2, y: H, len: 46 };
 // cannon sprite geometry (measured from cannon.png): joint at 66% down, ratio 0.756
-const CN_TH = 156;                 // drawn sprite height
+const CN_TH = 120;                 // drawn sprite height (was 156 — smaller, better proportion vs fish + less crowding in 6-8p rooms)
 const CN_TW = CN_TH * 0.756;       // drawn width (natural ratio)
 const CN_JOINT = 0.663;            // joint (pivot) fraction from top
 const CN_BARREL = CN_TH * CN_JOINT * 0.9; // muzzle distance from pivot
